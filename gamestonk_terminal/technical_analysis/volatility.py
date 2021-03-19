@@ -2,13 +2,20 @@ import argparse
 import matplotlib.pyplot as plt
 import pandas_ta as ta
 from pandas.plotting import register_matplotlib_converters
-from gamestonk_terminal.helper_funcs import check_positive, parse_known_args_and_warn
+from gamestonk_terminal.helper_funcs import (
+    check_positive,
+    parse_known_args_and_warn,
+    plot_autoscale,
+)
+from gamestonk_terminal.config_plot import PLOT_DPI
+from gamestonk_terminal import feature_flags as gtff
 
 register_matplotlib_converters()
 
 
 def bbands(l_args, s_ticker, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="bbands",
         description="""
             Bollinger Bands consist of three lines. The middle band is a simple
@@ -57,6 +64,8 @@ def bbands(l_args, s_ticker, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Daily
         if s_interval == "1440min":
@@ -78,7 +87,7 @@ def bbands(l_args, s_ticker, s_interval, df_stock):
                 offset=ns_parser.n_offset,
             ).dropna()
 
-        plt.figure()
+        plt.figure(figsize=plot_autoscale(), dpi=PLOT_DPI)
         if s_ticker == "1440min":
             plt.plot(
                 df_stock.index, df_stock["5. adjusted close"].values, color="k", lw=3
@@ -103,7 +112,10 @@ def bbands(l_args, s_ticker, s_interval, df_stock):
         plt.grid(b=True, which="major", color="#666666", linestyle="-")
         plt.minorticks_on()
         plt.grid(b=True, which="minor", color="#999999", linestyle="-", alpha=0.2)
-        plt.ion()
+
+        if gtff.USE_ION:
+            plt.ion()
+
         plt.show()
         print("")
 

@@ -2,13 +2,20 @@ import argparse
 import matplotlib.pyplot as plt
 import pandas_ta as ta
 from pandas.plotting import register_matplotlib_converters
-from gamestonk_terminal.helper_funcs import check_positive, parse_known_args_and_warn
+from gamestonk_terminal.helper_funcs import (
+    check_positive,
+    parse_known_args_and_warn,
+    plot_autoscale,
+)
+from gamestonk_terminal.config_plot import PLOT_DPI
+from gamestonk_terminal import feature_flags as gtff
 
 register_matplotlib_converters()
 
 
 def adx(l_args, s_ticker, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="adx",
         description="""
             The ADX is a Welles Wilder style moving average of the Directional Movement Index (DX).
@@ -56,6 +63,8 @@ def adx(l_args, s_ticker, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Daily
         if s_interval == "1440min":
@@ -91,7 +100,7 @@ def adx(l_args, s_ticker, s_interval, df_stock):
 
 
 def plot_adx(df_stock, s_ticker, df_ta):
-    plt.figure()
+    plt.figure(figsize=plot_autoscale(), dpi=PLOT_DPI)
     plt.subplot(211)
     plt.plot(df_stock.index, df_stock["4. close"].values, "k", lw=2)
     plt.title(f"Average Directional Movement Index (ADX) on {s_ticker}")
@@ -118,12 +127,16 @@ def plot_adx(df_stock, s_ticker, df_ta):
     plt.minorticks_on()
     plt.grid(b=True, which="minor", color="#999999", linestyle="-", alpha=0.2)
     plt.ylim([0, 100])
-    plt.ion()
+
+    if gtff.USE_ION:
+        plt.ion()
+
     plt.show()
 
 
 def aroon(l_args, s_ticker, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="aroon",
         description="""
             The word aroon is Sanskrit for "dawn's early light." The Aroon
@@ -169,6 +182,8 @@ def aroon(l_args, s_ticker, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         df_ta = ta.aroon(
             high=df_stock["2. high"],
@@ -178,7 +193,7 @@ def aroon(l_args, s_ticker, s_interval, df_stock):
             offset=ns_parser.n_offset,
         ).dropna()
 
-        plt.figure()
+        plt.figure(figsize=plot_autoscale(), dpi=PLOT_DPI)
         plt.subplot(311)
         # Daily
         if s_interval == "1440min":
@@ -215,7 +230,10 @@ def aroon(l_args, s_ticker, s_interval, df_stock):
         plt.minorticks_on()
         plt.grid(b=True, which="minor", color="#999999", linestyle="-", alpha=0.2)
         plt.ylim([-100, 100])
-        plt.ion()
+
+        if gtff.USE_ION:
+            plt.ion()
+
         plt.show()
         print("")
 

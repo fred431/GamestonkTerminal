@@ -11,6 +11,7 @@ from gamestonk_terminal.helper_funcs import (
 
 def high_short_interest(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="high_short",
         description="""
             Print top stocks being more heavily shorted. HighShortInterest.com provides
@@ -32,6 +33,8 @@ def high_short_interest(l_args):
     )
 
     ns_parser = parse_known_args_and_warn(parser, l_args)
+    if not ns_parser:
+        return
 
     url_high_short_interested_stocks = "https://www.highshortinterest.com"
     text_soup_high_short_interested_stocks = BeautifulSoup(
@@ -69,13 +72,14 @@ def high_short_interest(l_args):
 
         shorted_stock_data = list()
 
-    pd.set_option("display.max_colwidth", -1)
+    pd.set_option("display.max_colwidth", None)
     print(df_high_short_interest.head(n=ns_parser.n_num).to_string(index=False))
     print("")
 
 
 def low_float(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="low_float",
         description="""
             Print top stocks with lowest float. LowFloat.com provides a convenient
@@ -97,6 +101,8 @@ def low_float(l_args):
     )
 
     ns_parser = parse_known_args_and_warn(parser, l_args)
+    if not ns_parser:
+        return
 
     url_high_short_interested_stocks = "https://www.lowfloat.com"
     text_soup_low_float_stocks = BeautifulSoup(
@@ -130,6 +136,6 @@ def low_float(l_args):
 
         low_float_data = list()
 
-    pd.set_option("display.max_colwidth", -1)
+    pd.set_option("display.max_colwidth", None)
     print(df_low_float.head(n=ns_parser.n_num).to_string(index=False))
     print("")

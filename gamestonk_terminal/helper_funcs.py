@@ -8,10 +8,12 @@ import iso8601
 import matplotlib.pyplot as plt
 from holidays import US as holidaysUS
 from colorama import Fore, Style
-import pandas as pd
 import pandas.io.formats.format
 from pandas._config.config import get_option
 from pandas.plotting import register_matplotlib_converters
+from screeninfo import get_monitors
+from gamestonk_terminal import feature_flags as gtff
+from gamestonk_terminal import config_plot as cfgPlot
 
 register_matplotlib_converters()
 
@@ -39,7 +41,7 @@ def valid_date(s: str) -> datetime:
 
 def plot_view_stock(df, symbol):
     df.sort_index(ascending=True, inplace=True)
-    _, axVolume = plt.subplots()
+    _, axVolume = plt.subplots(figsize=plot_autoscale(), dpi=cfgPlot.PLOT_DPI)
     plt.bar(df.index, df.iloc[:, -1], color="k", alpha=0.8, width=0.3)
     plt.ylabel("Volume")
     _ = axVolume.twinx()
@@ -52,6 +54,10 @@ def plot_view_stock(df, symbol):
     plt.grid(b=True, which="major", color="#666666", linestyle="-")
     plt.minorticks_on()
     plt.grid(b=True, which="minor", color="#999999", linestyle="-", alpha=0.2)
+
+    if gtff.USE_ION:
+        plt.ion()
+
     plt.show()
     print("")
 
@@ -269,25 +275,33 @@ def patch_pandas_text_adjustment():
 
 
 def parse_known_args_and_warn(parser, l_args):
+    parser.add_argument(
+        "-h", "--help", action="store_true", dest="help", help="show this help message"
+    )
+
     (ns_parser, l_unknown_args) = parser.parse_known_args(l_args)
+
+    if ns_parser.help:
+        parser.print_help()
+        print("")
+        return None
+
     if l_unknown_args:
         print(f"The following args couldn't be interpreted: {l_unknown_args}")
+
     return ns_parser
 
 
-def price_prediction_color(val: int, last_val: int) -> str:
-    if float(val) > last_val:
-        color = Fore.GREEN
-    else:
-        color = Fore.RED
-    return f"{color}{val:.2f} ${Style.RESET_ALL}"
-
-
-def print_pretty_prediction(df_pred: pd.DataFrame, last_price: float):
-    print(f"Actual price: {Fore.YELLOW}{last_price:.2f} ${Style.RESET_ALL}\n")
-
-    print("Prediction:")
-    print(df_pred.apply(price_prediction_color, last_val=last_price).to_string())
+def financials_colored_values(val: str) -> str:
+    if sum(c.isalpha() for c in val) < 2:
+        if "%" in val:
+            if "-" in val:
+                val = f"{Fore.RED}{val}{Style.RESET_ALL}"
+            else:
+                val = f"{Fore.GREEN}{val}{Style.RESET_ALL}"
+        elif "(" in val:
+            val = f"{Fore.RED}{val}{Style.RESET_ALL}"
+    return val
 
 
 def check_ohlc(type_ohlc: str) -> str:
@@ -310,3 +324,72 @@ def check_sources(source: str) -> str:
     raise argparse.ArgumentTypeError(
         "This source for historical data is not available."
     )
+
+
+def get_flair() -> str:
+    flair = {
+        "rocket": "(🚀🚀)",
+        "diamond": "(💎💎)",
+        "stars": "(✨)",
+        "baseball": "(⚾)",
+        "boat": "(⛵)",
+        "phone": "(☎)",
+        "mercury": "(☿)",
+        "sun": "(☼)",
+        "moon": "(☾)",
+        "nuke": "(☢)",
+        "hazard": "(☣)",
+        "tunder": "(☈)",
+        "king": "(♔)",
+        "queen": "(♕)",
+        "knight": "(♘)",
+        "recycle": "(♻)",
+        "scales": "(⚖)",
+        "ball": "(⚽)",
+        "golf": "(⛳)",
+        "piece": "(☮)",
+        "yy": "(☯)",
+    }
+
+    if flair.get(gtff.USE_FLAIR):
+        return flair[gtff.USE_FLAIR]
+
+    return ""
+
+
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in {"false", "f", "0", "no", "n"}:
+        return False
+    if value.lower() in {"true", "t", "1", "yes", "y"}:
+        return True
+    raise ValueError(f"{value} is not a valid boolean value")
+
+
+def get_screeninfo():
+    screens = get_monitors()  # Get all available monitors
+    if len(screens) - 1 < cfgPlot.MONITOR:  # Check to see if chosen monitor is detected
+        monitor = 0
+        print(f"Could not locate monitor {cfgPlot.MONITOR}, using primary monitor.")
+    else:
+        monitor = cfgPlot.MONITOR
+    main_screen = screens[monitor]  # Choose what monitor to get
+
+    return (main_screen.width, main_screen.height)
+
+
+def plot_autoscale():
+
+    if gtff.USE_PLOT_AUTOSCALING:
+        x, y = get_screeninfo()  # Get screen size
+        x = ((x) * cfgPlot.PLOT_WIDTH_PERCENTAGE * 10 ** -2) / (
+            cfgPlot.PLOT_DPI
+        )  # Calculate width
+        if cfgPlot.PLOT_HEIGHT_PERCENTAGE == 100:  # If full height
+            y = y - 60  # Remove the height of window toolbar
+        y = ((y) * cfgPlot.PLOT_HEIGHT_PERCENTAGE * 10 ** -2) / (cfgPlot.PLOT_DPI)
+    else:  # If not autoscale, use size defined in config_plot.py
+        x = cfgPlot.PLOT_WIDTH / (cfgPlot.PLOT_DPI)
+        y = cfgPlot.PLOT_HEIGHT / (cfgPlot.PLOT_DPI)
+    return x, y

@@ -1,20 +1,29 @@
 #!/usr/bin/env python
 
 import argparse
+
+import sys
+import os
+from datetime import datetime, timedelta
 import pandas as pd
 from alpha_vantage.timeseries import TimeSeries
+from prompt_toolkit.completion import NestedCompleter
 
-from gamestonk_terminal.main_helper import print_help, clear, load, view, export
-from gamestonk_terminal.helper_funcs import b_is_stock_market_open
-
-from gamestonk_terminal.fundamental_analysis import fa_menu as fam
-from gamestonk_terminal.technical_analysis import ta_menu as tam
-from gamestonk_terminal.due_diligence import dd_menu as ddm
-from gamestonk_terminal.discovery import disc_menu as dm
-from gamestonk_terminal.sentiment import sen_menu as sm
-from gamestonk_terminal.papermill import papermill_menu as mill
-from gamestonk_terminal import res_menu as rm
 from gamestonk_terminal import config_terminal as cfg
+from gamestonk_terminal import feature_flags as gtff
+from gamestonk_terminal import res_menu as rm
+from gamestonk_terminal.discovery import disc_menu as dm
+from gamestonk_terminal.due_diligence import dd_menu as ddm
+from gamestonk_terminal.fundamental_analysis import fa_menu as fam
+from gamestonk_terminal.helper_funcs import b_is_stock_market_open, get_flair
+from gamestonk_terminal.main_helper import clear, export, load, print_help, view, candle
+from gamestonk_terminal.menu import session
+from gamestonk_terminal.papermill import papermill_controller as mill
+from gamestonk_terminal.behavioural_analysis import ba_controller
+from gamestonk_terminal.technical_analysis import ta_menu as tam
+from gamestonk_terminal.comparison_analysis import ca_menu as cam
+from gamestonk_terminal.options import op_menu as opm
+from gamestonk_terminal.fred import fred_menu as fm
 
 # import warnings
 # warnings.simplefilter("always")
@@ -26,6 +35,10 @@ def main():
     Gamestonk Terminal is an awesome stock market terminal that has been developed for fun,
     while I saw my GME shares tanking. But hey, I like the stock.
     """
+
+    # Enable VT100 Escape Sequence for WINDOWS 10 Ver. 1607
+    if sys.platform == "win32":
+        os.system("")
 
     s_ticker = ""
     s_start = ""
@@ -41,30 +54,33 @@ def main():
     # df_stock = df_stock[s_start:]
 
     # Add list of arguments that the main parser accepts
-    menu_parser = argparse.ArgumentParser(prog="gamestonk_terminal", add_help=False)
-    menu_parser.add_argument(
-        "opt",
-        choices=[
-            "help",
-            "quit",
-            "q",
-            "clear",
-            "load",
-            "view",
-            "export",
-            "disc",
-            "mill",
-            "sen",
-            "res",
-            "fa",
-            "ta",
-            "dd",
-            "pred",
-        ],
-    )
+    menu_parser = argparse.ArgumentParser(add_help=False, prog="gamestonk_terminal")
+    choices = [
+        "help",
+        "quit",
+        "q",
+        "clear",
+        "load",
+        "candle",
+        "view",
+        "export",
+        "disc",
+        "mill",
+        "ba",
+        "res",
+        "fa",
+        "ta",
+        "dd",
+        "pred",
+        "ca",
+        "op",
+        "fred",
+    ]
+    menu_parser.add_argument("opt", choices=choices)
+    completer = NestedCompleter.from_nested_dict({c: None for c in choices})
 
     # Print first welcome message and help
-    print("\nWelcome to Didier's Gamestonk Terminal\n")
+    print("\nWelcome to Gamestonk Terminal 🚀\n")
     should_print_help = True
 
     # Loop forever and ever
@@ -75,7 +91,10 @@ def main():
             should_print_help = False
 
         # Get input command from user
-        as_input = input("> ")
+        if session and gtff.USE_PROMPT_TOOLKIT:
+            as_input = session.prompt(f"{get_flair()}> ", completer=completer)
+        else:
+            as_input = input(f"{get_flair()}> ")
 
         # Is command empty
         if not as_input:
@@ -109,8 +128,30 @@ def main():
             )
             main_cmd = True
 
+        elif ns_known_args.opt == "candle":
+
+            if s_ticker:
+                candle(
+                    s_ticker,
+                    (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d"),
+                )
+
+            else:
+                print(
+                    "No ticker selected. Use 'load ticker' to load the ticker you want to look at."
+                )
+
+            main_cmd = True
+
         elif ns_known_args.opt == "view":
-            view(l_args, s_ticker, s_start, s_interval, df_stock)
+
+            if s_ticker:
+                view(l_args, s_ticker, s_start, s_interval, df_stock)
+
+            else:
+                print(
+                    "No ticker selected. Use 'load ticker' to load the ticker you want to look at."
+                )
             main_cmd = True
 
         elif ns_known_args.opt == "export":
@@ -123,11 +164,14 @@ def main():
         elif ns_known_args.opt == "mill":
             b_quit = mill.papermill_menu()
 
-        elif ns_known_args.opt == "sen":
-            b_quit = sm.sen_menu(s_ticker, s_start)
+        elif ns_known_args.opt == "ba":
+            b_quit = ba_controller.menu(s_ticker, s_start)
 
         elif ns_known_args.opt == "res":
             b_quit = rm.res_menu(s_ticker, s_start, s_interval)
+
+        elif ns_known_args.opt == "ca":
+            b_quit = cam.ca_menu(df_stock, s_ticker, s_start, s_interval)
 
         elif ns_known_args.opt == "fa":
             b_quit = fam.fa_menu(s_ticker, s_start, s_interval)
@@ -138,10 +182,16 @@ def main():
         elif ns_known_args.opt == "dd":
             b_quit = ddm.dd_menu(df_stock, s_ticker, s_start, s_interval)
 
+        elif ns_known_args.opt == "op":
+            b_quit = opm.opt_menu(s_ticker)
+
+        elif ns_known_args.opt == "fred":
+            b_quit = fm.fred_menu()
+
         elif ns_known_args.opt == "pred":
 
-            if not cfg.ENABLE_PREDICT:
-                print("Predict is not enabled in config_terminal.py")
+            if not gtff.ENABLE_PREDICT:
+                print("Predict is not enabled in feature_flags.py")
                 print("Prediction menu is disabled")
                 print("")
                 continue
@@ -184,7 +234,6 @@ def main():
                 except Exception as e:
                     print(e)
                     print("Either the ticker or the API_KEY are invalids. Try again!")
-                    b_quit = False
                     return
 
         else:

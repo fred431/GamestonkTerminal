@@ -1,7 +1,9 @@
 import argparse
 from sys import stdout
+import matplotlib.pyplot as plt
 import pandas as pd
 from alpha_vantage.timeseries import TimeSeries
+import mplfinance as mpf
 import yfinance as yf
 
 from gamestonk_terminal.helper_funcs import (
@@ -11,9 +13,12 @@ from gamestonk_terminal.helper_funcs import (
     check_ohlc,
     lett_to_num,
     check_sources,
+    plot_autoscale,
 )
 
 from gamestonk_terminal import config_terminal as cfg
+from gamestonk_terminal import feature_flags as gtff
+from gamestonk_terminal.technical_analysis import trendline_api as trend
 
 
 def print_help(s_ticker, s_start, s_interval, b_is_market_open):
@@ -24,6 +29,7 @@ def print_help(s_ticker, s_start, s_interval, b_is_market_open):
     print("")
     print("   clear       clear a specific stock ticker from analysis")
     print("   load        load a specific stock ticker for analysis")
+    print("   candle      view a candle chart for a specific stock ticker")
     print("   view        view and load a specific stock ticker for technical analysis")
     if s_ticker:
         print(
@@ -45,11 +51,18 @@ def print_help(s_ticker, s_start, s_interval, b_is_market_open):
     )
     print("   mill        papermill menu, \t\t\t menu to generate notebook reports")
     print(
-        "   sen         sentiment of the market, \t from: reddit, stocktwits, twitter"
+        "   fred        economic data, \t\t\t from: Federal Reserve Bank of St. Louis "
     )
+
     if s_ticker:
         print(
+            "   ba          behavioural analysis,    \t from: reddit, stocktwits, twitter"
+        )
+        print(
             "   res         research web page,       \t e.g.: macroaxis, yahoo finance, fool"
+        )
+        print(
+            "   ca          comparison analysis,     \t e.g.: historical, correlation, financials"
         )
         print(
             "   fa          fundamental analysis,    \t e.g.: income, balance, cash, earnings"
@@ -63,17 +76,22 @@ def print_help(s_ticker, s_start, s_interval, b_is_market_open):
         print(
             "   pred        prediction techniques,   \t e.g.: regression, arima, rnn, lstm, prophet"
         )
+        print("   op          options info,            \t e.g.: volume")
     print("")
 
 
 def clear(l_args, s_ticker, s_start, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="clear",
         description="""Clear previously loaded stock ticker.""",
     )
 
     try:
-        parse_known_args_and_warn(parser, l_args)
+        ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return "", "", "", pd.DataFrame()
+
         print("Clearing stock ticker to be used for analysis\n")
         return "", "", "", pd.DataFrame()
 
@@ -84,7 +102,9 @@ def clear(l_args, s_ticker, s_start, s_interval, df_stock):
 
 def load(l_args, s_ticker, s_start, s_interval, df_stock):
     parser = argparse.ArgumentParser(
-        prog="load", description=""" Load a stock in order to perform analysis."""
+        add_help=False,
+        prog="load",
+        description=""" Load a stock in order to perform analysis.""",
     )
     parser.add_argument(
         "-t",
@@ -128,6 +148,8 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
                 l_args.insert(0, "-t")
 
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return [s_ticker, s_start, s_interval, df_stock]
 
     except SystemExit:
         print("")
@@ -148,6 +170,7 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
                 df_stock, _ = ts.get_daily_adjusted(
                     symbol=ns_parser.s_ticker, outputsize="full"
                 )
+                # pylint: disable=no-member
                 df_stock.sort_index(ascending=True, inplace=True)
 
                 # Slice dataframe from the starting date YYYY-MM-DD selected
@@ -172,6 +195,8 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
                         "Volume": "6. volume",
                     }
                 )
+                df_stock.index.name = "date"
+
         # Intraday
         else:
             if ns_parser.source == "av":
@@ -180,6 +205,7 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
                 df_stock, _ = ts.get_intraday(
                     symbol=ns_parser.s_ticker, outputsize="full", interval=s_interval
                 )
+                # pylint: disable=no-member
                 df_stock.sort_index(ascending=True, inplace=True)
 
                 # Slice dataframe from the starting date YYYY-MM-DD selected
@@ -189,6 +215,7 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
                 print(
                     "Unfortunately, yahoo finance historical data doesn't contain intraday prices"
                 )
+                return [s_ticker, s_start, s_interval, df_stock]
 
     except Exception as e:
         print(e)
@@ -208,8 +235,53 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
     return [s_ticker, s_start, s_interval, df_stock]
 
 
+def candle(s_ticker: str, s_start: str):
+    df_stock = trend.load_ticker(s_ticker, s_start)
+    df_stock = trend.find_trendline(df_stock, "OC_High", "high")
+    df_stock = trend.find_trendline(df_stock, "OC_Low", "low")
+
+    mc = mpf.make_marketcolors(
+        up="green", down="red", edge="black", wick="black", volume="in", ohlc="i"
+    )
+
+    s = mpf.make_mpf_style(marketcolors=mc, gridstyle=":", y_on_right=True)
+
+    ap0 = []
+
+    if "OC_High_trend" in df_stock.columns:
+        ap0.append(
+            mpf.make_addplot(df_stock["OC_High_trend"], color="g"),
+        )
+
+    if "OC_Low_trend" in df_stock.columns:
+        ap0.append(
+            mpf.make_addplot(df_stock["OC_Low_trend"], color="b"),
+        )
+
+    if gtff.USE_ION:
+        plt.ion()
+
+    mpf.plot(
+        df_stock,
+        type="candle",
+        mav=(20, 50),
+        volume=True,
+        title=f"\n{s_ticker} - Last 6 months",
+        addplot=ap0,
+        xrotation=10,
+        style=s,
+        figratio=(10, 7),
+        figscale=1.10,
+        figsize=(plot_autoscale()),
+        update_width_config=dict(
+            candle_linewidth=1.0, candle_width=0.8, volume_linewidth=1.0
+        ),
+    )
+
+
 def view(l_args, s_ticker, s_start, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="view",
         description="Visualize historical data of a stock. An alpha_vantage key is necessary.",
     )
@@ -263,6 +335,8 @@ def view(l_args, s_ticker, s_start, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
     except SystemExit:
         print("")
@@ -332,6 +406,7 @@ def view(l_args, s_ticker, s_start, s_interval, df_stock):
 
 def export(l_args, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="export",
         description="Exports the historical data from this ticker to a file or stdout.",
     )
@@ -353,6 +428,9 @@ def export(l_args, df_stock):
     )
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
+
     except SystemExit:
         print("")
         return

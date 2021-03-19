@@ -9,8 +9,11 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Forks][forks-shield]][forks-url]
 [![Contributors][contributors-shield]][contributors-url]
-[![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
+
+[![Issues][issues-shield]][issues-url]
+[![Bugs Open][bugs-open-shield]][bugs-open-url]
+[![Bugs Closed][bugs-closed-shield]][bugs-closed-url]
 
 [![Build Status](https://github.com/DidierRLopes/GamestonkTerminal/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/DidierRLopes/GamestonkTerminal/actions)
 [![GitHub release](https://img.shields.io/github/release/DidierRLopes/GamestonkTerminal.svg?maxAge=3600)](https://github.com/DidierRLopes/GamestonkTerminal/releases)
@@ -22,7 +25,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/DidierRLopes/GamestonkTerminal">
-    <img src="images/GamestonkLogo.jpg" alt="Logo" width="400" height="350">
+    <img src="images/GamestonkLogo.png" alt="Logo" width="400" height="350">
   </a>
 
   <h3 align="center">Gamestonk Terminal 🚀</h3>
@@ -30,7 +33,9 @@
   <p align="center">
     The next best thing after Bloomberg Terminal. #weliketheterminal
     <br />
-    <a href="https://github.com/DidierRLopes/GamestonkTerminal/tree/main/gamestonk_terminal/README.md"><strong>Features »</strong></a>
+    <a href="https://github.com/DidierRLopes/GamestonkTerminal/blob/main/ROADMAP.md"><strong>≪  ROADMAP</strong></a>
+    &nbsp · &nbsp
+    <a href="https://github.com/DidierRLopes/GamestonkTerminal/tree/main/gamestonk_terminal/README.md"><strong>FEATURES »</strong></a>
     <br />
     <br />
     <a href="https://github.com/DidierRLopes/GamestonkTerminal/issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBug%5D">Report Bug</a>
@@ -60,18 +65,22 @@
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#disclaimer">Disclaimer</a></li>
-    <li><a href="#contact">Contact</a></li>
+    <li><a href="#contacts">Contacts</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
 
 ## About The Project
 
-How it started:
-"Gamestonk Terminal is an awesome stock and crypto market terminal that has been developed for fun, while I saw my GME shares tanking. But hey, I like the stock 💎🙌."
+**How it started:**
 
-How it's going:
-u/schoen: _(...) I think people have upvoted this so much because it's an initial version of a single person's passion project that manages to put a whole bunch of financial information at your fingertips. With an active community, it could easily grow and grow and grow in functionality._
+Gamestonk Terminal is an awesome stock and crypto market terminal that has been developed for fun, while I saw my GME shares tanking. But hey, I like the stock 💎🙌.
+
+**How it's going:**
+
+Gamestonk Terminal provides a modern Python-based integrated environment for investment research, that allows the average joe retail trader to leverage state-of-the-art Data Science and Machine Learning technologies.
+
+As a modern Python-based environment, GamestonkTerminal opens access to numerous Python data libraries in Data Science (Pandas, Numpy, Scipy, Jupyter), Machine Learning (Pytorch, Tensorflow, Sklearn, Flair), and Data Acquisition (Beautiful Soup, and numerous third-party APIs). 
 
 
 ## Getting Started
@@ -131,9 +140,9 @@ Note: The libraries specified in the [requirements.txt](/requirements.txt) file 
 
 *If you would like to use optional Machine Learning features:*
 
-* Update your [config_terminal.py](/gamestonk_terminal/config_terminal.py) with:
+* Update your [feature_flags.py](/gamestonk_terminal/feature_flags.py) with:
 ```
-ENABLE_PREDICT = False
+ENABLE_PREDICT = os.getenv("GTFF_ENABLE_PREDICT") or True
 ```
 
 * Install optional ML features dependencies collection with poetry:
@@ -162,11 +171,12 @@ These are the ones where a key is necessary:
   * Quandl: https://www.quandl.com/tools/api
   * Reddit: https://www.reddit.com/prefs/apps
   * Twitter: https://developer.twitter.com
+  * Polygon: https://polygon.io
   * Financial Modeling Prep: https://financialmodelingprep.com/developer
 
 When these are obtained, don't forget to update [config_terminal.py](/gamestonk_terminal/config_terminal.py).
 
-Alternatively, you can also set them to the following environment variables: GT_API_KEY_ALPHAVANTAGE, GT_API_KEY_FINANCIALMODELINGPREP, GT_API_KEY_QUANDL, GT_API_REDDIT_CLIENT_ID, GT_API_REDDIT_CLIENT_SECRET, GT_API_REDDIT_USERNAME, GT_API_REDDIT_USER_AGENT, GT_API_REDDIT_PASSWORD, GT_API_TWITTER_KEY, GT_API_TWITTER_SECRET_KEY, GT_API_TWITTER_BEARER_TOKEN.
+Alternatively, you can also set them to the following environment variables: GT_API_KEY_ALPHAVANTAGE, GT_API_KEY_FINANCIALMODELINGPREP, GT_API_KEY_QUANDL, GT_API_REDDIT_CLIENT_ID, GT_API_REDDIT_CLIENT_SECRET, GT_API_REDDIT_USERNAME, GT_API_REDDIT_USER_AGENT, GT_API_REDDIT_PASSWORD, GT_API_TWITTER_KEY, GT_API_TWITTER_SECRET_KEY, GT_API_TWITTER_BEARER_TOKEN, GT_API_POLYGON_KEY.
 
 Example:
 ```
@@ -225,8 +235,11 @@ Recommended if you bought the dip, and the share price keeps dipping. You may as
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to your Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+4. Appease the linters and commit again if needed
+   1. Install and run `black` for every change you've made
+   2. Install and run `flake8` for every change you've made. `flake8 . --count --ignore=E203,W503 --max-line-length=122 --show-source --statistics`
+5. Push to your Branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request
 
 
 **Become a Karen 🤷**
@@ -252,11 +265,14 @@ Welcome to the club, and feel free to support the developers behind this amazing
 Distributed under the MIT License. See [LICENSE](https://github.com/DidierRLopes/GamestonkTerminal/blob/main/LICENSE) for more information.
 
 ## Disclaimer
+
 "A few things I am not. I am not a cat. I am not an institutional investor, nor am I a hedge fund. I do not have clients and I do not provide personalized investment advice for fees or commissions." DFV
 
-## Contact
+## Contacts
 
 [Didier Rodrigues Lopes](https://www.linkedin.com/in/didier-lopes/) - dro.lopes@campus.fct.unl.pt
+
+[Artem Veremy](https://www.linkedin.com/in/veremey/) - artem@veremey.net
 
 ## Acknowledgments
 
@@ -274,8 +290,12 @@ Distributed under the MIT License. See [LICENSE](https://github.com/DidierRLopes
 [forks-url]: https://github.com/DidierRLopes/GamestonkTerminal/network/members
 [stars-shield]: https://img.shields.io/github/stars/DidierRLopes/GamestonkTerminal.svg?style=for-the-badge
 [stars-url]: https://github.com/DidierRLopes/GamestonkTerminal/stargazers
-[issues-shield]: https://img.shields.io/github/issues/DidierRLopes/GamestonkTerminal.svg?style=for-the-badge
+[issues-shield]: https://img.shields.io/github/issues/DidierRLopes/GamestonkTerminal.svg?style=for-the-badge&color=blue
 [issues-url]: https://github.com/DidierRLopes/GamestonkTerminal/issues
+[bugs-open-shield]: https://img.shields.io/github/issues/DidierRLopes/GamestonkTerminal/bug.svg?style=for-the-badge&color=yellow
+[bugs-open-url]: https://github.com/DidierRLopes/GamestonkTerminal/issues?q=is%3Aissue+label%3Abug+is%3Aopen
+[bugs-closed-shield]: https://img.shields.io/github/issues-closed/DidierRLopes/GamestonkTerminal/bug.svg?style=for-the-badge&color=success
+[bugs-closed-url]: https://github.com/DidierRLopes/GamestonkTerminal/issues?q=is%3Aissue+label%3Abug+is%3Aclosed
 [license-shield]: https://img.shields.io/github/license/DidierRLopes/GamestonkTerminal.svg?style=for-the-badge
 [license-url]: https://github.com/DidierRLopes/GamestonkTerminal/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555

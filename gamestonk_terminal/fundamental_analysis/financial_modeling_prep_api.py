@@ -2,17 +2,140 @@ import argparse
 from datetime import datetime
 import pandas as pd
 import FundamentalAnalysis as fa  # Financial Modeling Prep
+from prompt_toolkit.completion import NestedCompleter
 from gamestonk_terminal import config_terminal as cfg
 from gamestonk_terminal.dataframe_helpers import clean_df_index
 from gamestonk_terminal.helper_funcs import (
     long_number_format,
     check_positive,
     parse_known_args_and_warn,
+    get_flair,
 )
+from gamestonk_terminal.menu import session
+
+
+def print_menu(s_ticker, s_start, s_interval):
+    """ Print help """
+
+    s_intraday = (f"Intraday {s_interval}", "Daily")[s_interval == "1440min"]
+
+    if s_start:
+        print(f"\n{s_intraday} Stock: {s_ticker} (from {s_start.strftime('%Y-%m-%d')})")
+    else:
+        print(f"\n{s_intraday} Stock: {s_ticker}")
+
+    print("\nFinancial Modeling Prep API")
+    print("   help          show this financial modeling prep menu again")
+    print("   q             quit this menu, and shows back to main menu")
+    print("   quit          quit to abandon program")
+    print("")
+    print("   profile       profile of the company")
+    print("   quote         quote of the company")
+    print("   enterprise    enterprise value of the company over time")
+    print("   dcf           discounted cash flow of the company over time")
+    print("   income        income statements of the company")
+    print("   balance       balance sheet of the company")
+    print("   cash          cash flow statement of the company")
+    print("   metrics       key metrics of the company")
+    print("   ratios        financial ratios of the company")
+    print("   growth        financial statement growth of the company")
+    print("")
+
+
+def menu(s_ticker, s_start, s_interval):
+
+    # Add list of arguments that the fundamental analysis parser accepts
+    fmp_parser = argparse.ArgumentParser(prog="fmp", add_help=False)
+    choices = [
+        "help",
+        "q",
+        "quit",
+        "profile",
+        "quote",
+        "enterprise",
+        "dcf",
+        "fmp_income",
+        "fmp_balance",
+        "fmp_cash",
+        "metrics",
+        "ratios",
+        "growth",
+    ]
+    fmp_parser.add_argument("cmd", choices=choices)
+    completer = NestedCompleter.from_nested_dict({c: None for c in choices})
+
+    print_menu(s_ticker, s_start, s_interval)
+
+    # Loop forever and ever
+    while True:
+        # Get input command from user
+        if session:
+            as_input = session.prompt(
+                f"{get_flair()} (fa)>(fmp)> ",
+                completer=completer,
+            )
+        else:
+            as_input = input(f"{get_flair()} (fa)>(av)> ")
+
+        # Parse alpha vantage command of the list of possible commands
+        try:
+            (ns_known_args, l_args) = fmp_parser.parse_known_args(as_input.split())
+
+        except SystemExit:
+            print("The command selected doesn't exist\n")
+            continue
+
+        if ns_known_args.cmd == "help":
+            print_menu(s_ticker, s_start, s_interval)
+
+        elif ns_known_args.cmd == "q":
+            # Just leave the menu
+            return False
+
+        elif ns_known_args.cmd == "quit":
+            # Abandon the program
+            return True
+
+        # Details:
+        elif ns_known_args.cmd == "profile":
+            profile(l_args, s_ticker)
+
+        elif ns_known_args.cmd == "quote":
+            quote(l_args, s_ticker)
+
+        elif ns_known_args.cmd == "enterprise":
+            enterprise(l_args, s_ticker)
+
+        elif ns_known_args.cmd == "dcf":
+            discounted_cash_flow(l_args, s_ticker)
+
+        # Financial statement:
+        elif ns_known_args.cmd == "income":
+            income_statement(l_args, s_ticker)
+
+        elif ns_known_args.cmd == "balance":
+            balance_sheet(l_args, s_ticker)
+
+        elif ns_known_args.cmd == "cash":
+            cash_flow(l_args, s_ticker)
+
+        # Ratios:
+        elif ns_known_args.cmd == "metrics":
+            key_metrics(l_args, s_ticker)
+
+        elif ns_known_args.cmd == "ratios":
+            financial_ratios(l_args, s_ticker)
+
+        elif ns_known_args.cmd == "growth":
+            financial_statement_growth(l_args, s_ticker)
+
+        else:
+            print("Command not recognized!")
 
 
 def profile(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="profile",
         description="""
             Prints information about, among other things, the industry, sector exchange and company
@@ -25,7 +148,9 @@ def profile(l_args, s_ticker):
     )
 
     try:
-        parse_known_args_and_warn(parser, l_args)
+        ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         df_fa = fa.profile(s_ticker, cfg.API_KEY_FINANCIALMODELINGPREP)
         clean_df_index(df_fa)
@@ -43,6 +168,7 @@ def profile(l_args, s_ticker):
 
 def quote(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="quote",
         description="""
             Prints actual information about the company which is, among other things, the day high,
@@ -55,7 +181,9 @@ def quote(l_args, s_ticker):
     )
 
     try:
-        parse_known_args_and_warn(parser, l_args)
+        ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         df_fa = fa.quote(s_ticker, cfg.API_KEY_FINANCIALMODELINGPREP)
 
@@ -85,6 +213,7 @@ def quote(l_args, s_ticker):
 
 def enterprise(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="enterprise",
         description="""
             Prints stock price, number of shares, market capitalization and
@@ -114,9 +243,11 @@ def enterprise(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 40
 
@@ -140,6 +271,7 @@ def enterprise(l_args, s_ticker):
 
 def discounted_cash_flow(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="dcf",
         description="""
             Prints the discounted cash flow of a company over time including the DCF of today. The
@@ -167,9 +299,11 @@ def discounted_cash_flow(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 40
 
@@ -193,6 +327,7 @@ def discounted_cash_flow(l_args, s_ticker):
 
 def income_statement(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="inc",
         description="""
             Prints a complete income statement over time. This can be either quarterly or annually.
@@ -227,9 +362,11 @@ def income_statement(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 40
 
@@ -244,7 +381,7 @@ def income_statement(l_args, s_ticker):
 
         print(df_fa.drop(index=["Final link", "Link"]).to_string())
 
-        pd.set_option("display.max_colwidth", -1)
+        pd.set_option("display.max_colwidth", None)
         print("")
         print(df_fa.loc["Final link"].to_frame().to_string())
         print("")
@@ -259,6 +396,7 @@ def income_statement(l_args, s_ticker):
 
 def balance_sheet(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="bal",
         description="""
             Prints a complete balance sheet statement over time. This can be
@@ -298,9 +436,11 @@ def balance_sheet(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 40
 
@@ -317,7 +457,7 @@ def balance_sheet(l_args, s_ticker):
 
         print(df_fa.drop(index=["Final link", "Link"]).to_string())
 
-        pd.set_option("display.max_colwidth", -1)
+        pd.set_option("display.max_colwidth", None)
         print("")
         print(df_fa.loc["Final link"].to_frame().to_string())
         print("")
@@ -332,6 +472,7 @@ def balance_sheet(l_args, s_ticker):
 
 def cash_flow(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="cash",
         description="""
             Prints a complete cash flow statement over time. This can be either
@@ -369,9 +510,11 @@ def cash_flow(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 40
 
@@ -386,7 +529,7 @@ def cash_flow(l_args, s_ticker):
 
         print(df_fa.drop(index=["Final link", "Link"]).to_string())
 
-        pd.set_option("display.max_colwidth", -1)
+        pd.set_option("display.max_colwidth", None)
         print("")
         print(df_fa.loc["Final link"].to_frame().to_string())
         print("")
@@ -401,6 +544,7 @@ def cash_flow(l_args, s_ticker):
 
 def key_metrics(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="metrics",
         description="""
             Prints a list of the key metrics of a company over time. This can be either
@@ -443,9 +587,11 @@ def key_metrics(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 50
 
@@ -469,6 +615,7 @@ def key_metrics(l_args, s_ticker):
 
 def financial_ratios(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="ratios",
         description="""
             Prints in-depth ratios of a company over time. This can be either quarterly or
@@ -512,9 +659,11 @@ def financial_ratios(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 40
 
@@ -538,6 +687,7 @@ def financial_ratios(l_args, s_ticker):
 
 def financial_statement_growth(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="growth",
         description=""" Prints the growth of several financial statement items and ratios over
         time. This can be either annually and quarterly. These are, among other things, Revenue
@@ -577,9 +727,11 @@ def financial_statement_growth(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         if ns_parser.n_num == 1:
-            pd.set_option("display.max_colwidth", -1)
+            pd.set_option("display.max_colwidth", None)
         else:
             pd.options.display.max_colwidth = 50
 

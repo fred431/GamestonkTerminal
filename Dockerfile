@@ -13,7 +13,12 @@ dnsutils \
 git \
 gnupg \
 unzip \
-bzip2 && \
+bzip2 \ 
+libsm6 \ 
+libxt6 \ 
+libgl1-mesa-glx \ 
+libpng16-16 \
+python3-tk && \
 apt-get -y autoremove && \
 apt-get clean && \
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -30,4 +35,4 @@ COPY --chown=python:python . .
 RUN pip install "poetry==1.1.4"
 RUN poetry export --without-hashes -f requirements.txt | pip install -r /dev/stdin
 
-CMD ["python", "gamestonk_terminal.py"]
+CMD ["python", "terminal.py"]

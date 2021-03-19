@@ -18,6 +18,7 @@ from gamestonk_terminal.reddit_helpers import (
 
 def watchlist(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="watchlist",
         description="""Print other users watchlist. [Source: Reddit]""",
     )
@@ -33,6 +34,8 @@ def watchlist(l_args):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         l_sub_reddits = [
             "pennystocks",
@@ -71,51 +74,57 @@ def watchlist(l_args):
 
         n_flair_posts_found = 0
         while True:
-            submission = next(submissions, None)
+            try:
+                submission = next(submissions, None)
 
-            # Check if search_submissions didn't get anymore posts
-            if not submission:
-                break
+                # Check if search_submissions didn't get anymore posts
+                if not submission:
+                    break
 
-            # Get more information about post using PRAW api
-            submission = praw_api.submission(id=submission.id)
+                # Get more information about post using PRAW api
+                submission = praw_api.submission(id=submission.id)
 
-            # Ensure that the post hasn't been removed  by moderator in the meanwhile,
-            # that there is a description and it's not just an image, that the flair is
-            # meaningful, and that we aren't re-considering same author's watchlist
-            if (
-                not submission.removed_by_category
-                and submission.selftext
-                and submission.link_flair_text not in ["Yolo", "Meme"]
-                and submission.author.name not in l_watchlist_author
-            ):
-                l_tickers_found = find_tickers(submission)
+                # Ensure that the post hasn't been removed  by moderator in the meanwhile,
+                # that there is a description and it's not just an image, that the flair is
+                # meaningful, and that we aren't re-considering same author's watchlist
+                if (
+                    not submission.removed_by_category
+                    and submission.selftext
+                    and submission.link_flair_text not in ["Yolo", "Meme"]
+                    and submission.author.name not in l_watchlist_author
+                ):
+                    l_tickers_found = find_tickers(submission)
 
-                if l_tickers_found:
-                    # Add another author's name to the parsed watchlists
-                    l_watchlist_author.append(submission.author.name)
+                    if l_tickers_found:
+                        # Add another author's name to the parsed watchlists
+                        l_watchlist_author.append(submission.author.name)
 
-                    # Lookup stock tickers within a watchlist
-                    for key in l_tickers_found:
-                        if key in d_watchlist_tickers:
-                            # Increment stock ticker found
-                            d_watchlist_tickers[key] += 1
-                        else:
-                            # Initialize stock ticker found
-                            d_watchlist_tickers[key] = 1
+                        # Lookup stock tickers within a watchlist
+                        for key in l_tickers_found:
+                            if key in d_watchlist_tickers:
+                                # Increment stock ticker found
+                                d_watchlist_tickers[key] += 1
+                            else:
+                                # Initialize stock ticker found
+                                d_watchlist_tickers[key] = 1
 
-                    l_watchlist_links.append(
-                        f"https://old.reddit.com{submission.permalink}"
-                    )
+                        l_watchlist_links.append(
+                            f"https://old.reddit.com{submission.permalink}"
+                        )
 
-                    print_and_record_reddit_post(d_submission, submission)
+                        print_and_record_reddit_post(d_submission, submission)
 
-                    # Increment count of valid posts found
-                    n_flair_posts_found += 1
+                        # Increment count of valid posts found
+                        n_flair_posts_found += 1
 
-            # Check if number of wanted posts found has been reached
-            if n_flair_posts_found > ns_parser.n_limit - 1:
-                break
+                # Check if number of wanted posts found has been reached
+                if n_flair_posts_found > ns_parser.n_limit - 1:
+                    break
+            except ResponseException:
+                print(
+                    "Received a response from Reddit with an authorization error. check your token.\n"
+                )
+                return
 
         if n_flair_posts_found:
             lt_watchlist_sorted = sorted(
@@ -132,7 +141,7 @@ def watchlist(l_args):
                         s_watchlist_tickers += f"{t_ticker[1]} {t_ticker[0]}, "
                     n_tickers += 1
                 except Exception as e:
-                    print(e)
+                    print(e, "\n")
                     # pass
             if n_tickers:
                 print(
@@ -142,12 +151,13 @@ def watchlist(l_args):
         print("")
 
     except Exception as e:
-        print(e)
+        print(e, "\n")
         print("")
 
 
 def popular_tickers(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="popular",
         description="""Print latest popular tickers. [Source: Reddit] """,
     )
@@ -193,6 +203,8 @@ def popular_tickers(l_args):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         n_ts_after = int(
             (datetime.today() - timedelta(days=ns_parser.n_days)).timestamp()
@@ -242,39 +254,45 @@ def popular_tickers(l_args):
 
             n_tickers = 0
             while True:
-                submission = next(submissions, None)
-                if submission:
-                    # Get more information about post using PRAW api
-                    submission = praw_api.submission(id=submission.id)
+                try:
+                    submission = next(submissions, None)
+                    if submission:
+                        # Get more information about post using PRAW api
+                        submission = praw_api.submission(id=submission.id)
 
-                    # Ensure that the post hasn't been removed by moderator in the meanwhile,
-                    # that there is a description and it's not just an image, that the flair is
-                    # meaningful, and that we aren't re-considering same author's content
-                    if (
-                        not submission.removed_by_category
-                        and (submission.selftext or submission.title)
-                        and submission.author.name not in l_watchlist_author
-                    ):
-                        l_tickers_found = find_tickers(submission)
+                        # Ensure that the post hasn't been removed by moderator in the meanwhile,
+                        # that there is a description and it's not just an image, that the flair is
+                        # meaningful, and that we aren't re-considering same author's content
+                        if (
+                            not submission.removed_by_category
+                            and (submission.selftext or submission.title)
+                            and submission.author.name not in l_watchlist_author
+                        ):
+                            l_tickers_found = find_tickers(submission)
 
-                        if l_tickers_found:
-                            n_tickers += len(l_tickers_found)
+                            if l_tickers_found:
+                                n_tickers += len(l_tickers_found)
 
-                            # Add another author's name to the parsed watchlists
-                            l_watchlist_author.append(submission.author.name)
+                                # Add another author's name to the parsed watchlists
+                                l_watchlist_author.append(submission.author.name)
 
-                            # Lookup stock tickers within a watchlist
-                            for key in l_tickers_found:
-                                if key in d_watchlist_tickers:
-                                    # Increment stock ticker found
-                                    d_watchlist_tickers[key] += 1
-                                else:
-                                    # Initialize stock ticker found
-                                    d_watchlist_tickers[key] = 1
+                                # Lookup stock tickers within a watchlist
+                                for key in l_tickers_found:
+                                    if key in d_watchlist_tickers:
+                                        # Increment stock ticker found
+                                        d_watchlist_tickers[key] += 1
+                                    else:
+                                        # Initialize stock ticker found
+                                        d_watchlist_tickers[key] = 1
 
-                # Check if search_submissions didn't get anymore posts
-                else:
-                    break
+                    # Check if search_submissions didn't get anymore posts
+                    else:
+                        break
+                except ResponseException:
+                    print(
+                        "Received a response from Reddit with an authorization error. check your token.\n"
+                    )
+                    return
 
             print(f"  {n_tickers} potential tickers found.")
 
@@ -308,9 +326,10 @@ def popular_tickers(l_args):
                     n_top_stocks += 1
                 except HTTPError as e:
                     if e.response.status_code != 404:
-                        print(f"Unexpected exception from Fiviz: {e}")
+                        print(f"Unexpected exception from Finviz: {e}")
                 except Exception as e:
-                    print(e)
+                    print(e, "\n")
+                    return
 
             popular_tickers_df = pd.DataFrame(
                 popular_tickers,
@@ -330,27 +349,22 @@ def popular_tickers(l_args):
                 f"\nThe following TOP {ns_parser.n_top} tickers have been mentioned in the last {ns_parser.n_days} days:"
             )
 
-            print(popular_tickers_df)
-            print("")
+            print(popular_tickers_df, "\n")
         else:
             print("No tickers found")
 
         print("")
 
-    except ResponseException as e:
-        if e.response.status_code == 401:
-            print(
-                "Received a response from Reddit with an authorization error. Check your token."
-            )
-            print("")
-
-    except Exception as e:
-        print(e)
-        print("")
+    except ResponseException:
+        print(
+            "Received a response from Reddit with an authorization error. check your token.\n"
+        )
+        return
 
 
 def spac_community(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="spac_c",
         description="""Print other users SPACs announcement under subreddit 'SPACs' [Source: Reddit]""",
     )
@@ -374,6 +388,8 @@ def spac_community(l_args):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         praw_api = praw.Reddit(
             client_id=cfg.API_REDDIT_CLIENT_ID,
@@ -396,44 +412,50 @@ def spac_community(l_args):
             submissions = praw_api.subreddit("SPACs").new(limit=ns_parser.n_limit)
 
         while True:
-            submission = next(submissions, None)
-            if submission:
-                # Get more information about post using PRAW api
-                submission = praw_api.submission(id=submission.id)
+            try:
+                submission = next(submissions, None)
+                if submission:
+                    # Get more information about post using PRAW api
+                    submission = praw_api.submission(id=submission.id)
 
-                # Ensure that the post hasn't been removed  by moderator in the meanwhile,
-                # that there is a description and it's not just an image, that the flair is
-                # meaningful, and that we aren't re-considering same author's watchlist
-                if (
-                    not submission.removed_by_category
-                    and submission.selftext
-                    and submission.link_flair_text not in ["Yolo", "Meme"]
-                    and submission.author.name not in l_watchlist_author
-                ):
-                    l_tickers_found = find_tickers(submission)
+                    # Ensure that the post hasn't been removed  by moderator in the meanwhile,
+                    # that there is a description and it's not just an image, that the flair is
+                    # meaningful, and that we aren't re-considering same author's watchlist
+                    if (
+                        not submission.removed_by_category
+                        and submission.selftext
+                        and submission.link_flair_text not in ["Yolo", "Meme"]
+                        and submission.author.name not in l_watchlist_author
+                    ):
+                        l_tickers_found = find_tickers(submission)
 
-                    if l_tickers_found:
-                        # Add another author's name to the parsed watchlists
-                        l_watchlist_author.append(submission.author.name)
+                        if l_tickers_found:
+                            # Add another author's name to the parsed watchlists
+                            l_watchlist_author.append(submission.author.name)
 
-                        # Lookup stock tickers within a watchlist
-                        for key in l_tickers_found:
-                            if key in d_watchlist_tickers:
-                                # Increment stock ticker found
-                                d_watchlist_tickers[key] += 1
-                            else:
-                                # Initialize stock ticker found
-                                d_watchlist_tickers[key] = 1
+                            # Lookup stock tickers within a watchlist
+                            for key in l_tickers_found:
+                                if key in d_watchlist_tickers:
+                                    # Increment stock ticker found
+                                    d_watchlist_tickers[key] += 1
+                                else:
+                                    # Initialize stock ticker found
+                                    d_watchlist_tickers[key] = 1
 
-                        l_watchlist_links.append(
-                            f"https://old.reddit.com{submission.permalink}"
-                        )
+                            l_watchlist_links.append(
+                                f"https://old.reddit.com{submission.permalink}"
+                            )
 
-                        print_and_record_reddit_post(d_submission, submission)
+                            print_and_record_reddit_post(d_submission, submission)
 
-            # Check if search_submissions didn't get anymore posts
-            else:
-                break
+                # Check if search_submissions didn't get anymore posts
+                else:
+                    break
+            except ResponseException:
+                print(
+                    "Received a response from Reddit with an authorization error. check your token.\n"
+                )
+                return
 
         if d_watchlist_tickers:
             lt_watchlist_sorted = sorted(
@@ -450,8 +472,7 @@ def spac_community(l_args):
                         s_watchlist_tickers += f"{t_ticker[1]} {t_ticker[0]}, "
                     n_tickers += 1
                 except Exception as e:
-                    print(e)
-                    # pass
+                    print(e, "\n")
             if n_tickers:
                 print(
                     "The following stock tickers have been mentioned more than once across the previous SPACs:"
@@ -460,13 +481,14 @@ def spac_community(l_args):
         print("")
 
     except Exception as e:
-        print(e)
-        print("")
+        print(e, "\n")
 
 
 def spac(l_args):
     parser = argparse.ArgumentParser(
-        prog="spac", description=""" Show other users SPACs announcement [Reddit] """
+        add_help=False,
+        prog="spac",
+        description=""" Show other users SPACs announcement [Reddit] """,
     )
     parser.add_argument(
         "-l",
@@ -489,6 +511,8 @@ def spac(l_args):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         praw_api = praw.Reddit(
             client_id=cfg.API_REDDIT_CLIENT_ID,
@@ -526,51 +550,57 @@ def spac(l_args):
         )
         n_flair_posts_found = 0
         while True:
-            submission = next(submissions, None)
-            if submission:
-                # Get more information about post using PRAW api
-                submission = praw_api.submission(id=submission.id)
+            try:
+                submission = next(submissions, None)
+                if submission:
+                    # Get more information about post using PRAW api
+                    submission = praw_api.submission(id=submission.id)
 
-                # Ensure that the post hasn't been removed  by moderator in the meanwhile,
-                # that there is a description and it's not just an image, that the flair is
-                # meaningful, and that we aren't re-considering same author's watchlist
-                if (
-                    not submission.removed_by_category
-                    and submission.selftext
-                    and submission.link_flair_text not in ["Yolo", "Meme"]
-                    and submission.author.name not in l_watchlist_author
-                ):
-                    l_tickers_found = find_tickers(submission)
+                    # Ensure that the post hasn't been removed  by moderator in the meanwhile,
+                    # that there is a description and it's not just an image, that the flair is
+                    # meaningful, and that we aren't re-considering same author's watchlist
+                    if (
+                        not submission.removed_by_category
+                        and submission.selftext
+                        and submission.link_flair_text not in ["Yolo", "Meme"]
+                        and submission.author.name not in l_watchlist_author
+                    ):
+                        l_tickers_found = find_tickers(submission)
 
-                    if l_tickers_found:
-                        # Add another author's name to the parsed watchlists
-                        l_watchlist_author.append(submission.author.name)
+                        if l_tickers_found:
+                            # Add another author's name to the parsed watchlists
+                            l_watchlist_author.append(submission.author.name)
 
-                        # Lookup stock tickers within a watchlist
-                        for key in l_tickers_found:
-                            if key in d_watchlist_tickers:
-                                # Increment stock ticker found
-                                d_watchlist_tickers[key] += 1
-                            else:
-                                # Initialize stock ticker found
-                                d_watchlist_tickers[key] = 1
+                            # Lookup stock tickers within a watchlist
+                            for key in l_tickers_found:
+                                if key in d_watchlist_tickers:
+                                    # Increment stock ticker found
+                                    d_watchlist_tickers[key] += 1
+                                else:
+                                    # Initialize stock ticker found
+                                    d_watchlist_tickers[key] = 1
 
-                        l_watchlist_links.append(
-                            f"https://old.reddit.com{submission.permalink}"
-                        )
+                            l_watchlist_links.append(
+                                f"https://old.reddit.com{submission.permalink}"
+                            )
 
-                        print_and_record_reddit_post(d_submission, submission)
+                            print_and_record_reddit_post(d_submission, submission)
 
-                        # Increment count of valid posts found
-                        n_flair_posts_found += 1
+                            # Increment count of valid posts found
+                            n_flair_posts_found += 1
 
-                # Check if number of wanted posts found has been reached
-                if n_flair_posts_found > ns_parser.n_limit - 1:
+                    # Check if number of wanted posts found has been reached
+                    if n_flair_posts_found > ns_parser.n_limit - 1:
+                        break
+
+                # Check if search_submissions didn't get anymore posts
+                else:
                     break
-
-            # Check if search_submissions didn't get anymore posts
-            else:
-                break
+            except ResponseException:
+                print(
+                    "Received a response from Reddit with an authorization error. check your token.\n"
+                )
+                return
 
         if n_flair_posts_found:
             lt_watchlist_sorted = sorted(
@@ -587,7 +617,7 @@ def spac(l_args):
                         s_watchlist_tickers += f"{t_ticker[1]} {t_ticker[0]}, "
                     n_tickers += 1
                 except Exception as e:
-                    print(e)
+                    print(e, "\n")
                     # pass
             if n_tickers:
                 print(
@@ -597,12 +627,12 @@ def spac(l_args):
         print("")
 
     except Exception as e:
-        print(e)
-        print("")
+        print(e, "\n")
 
 
 def wsb_community(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="wsb",
         description="""Print what WSB gang are up to in subreddit wallstreetbets. [Source: Reddit]""",
     )
@@ -626,6 +656,8 @@ def wsb_community(l_args):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         praw_api = praw.Reddit(
             client_id=cfg.API_REDDIT_CLIENT_ID,
@@ -648,28 +680,31 @@ def wsb_community(l_args):
             submissions = praw_api.subreddit("wallstreetbets").hot(
                 limit=ns_parser.n_limit
             )
-
         while True:
-            submission = next(submissions, None)
-            if submission:
-                # Get more information about post using PRAW api
-                submission = praw_api.submission(id=submission.id)
+            try:
+                submission = next(submissions, None)
+                if submission:
+                    # Get more information about post using PRAW api
+                    submission = praw_api.submission(id=submission.id)
 
-                # Ensure that the post hasn't been removed  by moderator in the meanwhile,
-                # that there is a description and it's not just an image, that the flair is
-                # meaningful, and that we aren't re-considering same author's watchlist
-                if not submission.removed_by_category:
+                    # Ensure that the post hasn't been removed  by moderator in the meanwhile,
+                    # that there is a description and it's not just an image, that the flair is
+                    # meaningful, and that we aren't re-considering same author's watchlist
+                    if not submission.removed_by_category:
 
-                    l_watchlist_links.append(
-                        f"https://old.reddit.com{submission.permalink}"
-                    )
+                        l_watchlist_links.append(
+                            f"https://old.reddit.com{submission.permalink}"
+                        )
 
-                    print_and_record_reddit_post(d_submission, submission)
+                        print_and_record_reddit_post(d_submission, submission)
 
-            # Check if search_submissions didn't get anymore posts
-            else:
-                break
-            print("")
+                # Check if search_submissions didn't get anymore posts
+                else:
+                    break
+            except ResponseException:
+                print(
+                    "Received a response from Reddit with an authorization error. check your token.\n"
+                )
+                return
     except Exception as e:
-        print(e)
-        print("")
+        print(e, "\n")

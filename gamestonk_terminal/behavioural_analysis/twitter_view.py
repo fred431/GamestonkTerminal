@@ -77,6 +77,7 @@ def load_tweets(s_ticker: str, count: int) -> DataFrame:
 
 def inference(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="infer",
         description="""
             Print quick sentiment inference from last tweets that contain the ticker.
@@ -100,6 +101,8 @@ def inference(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Get tweets using Twitter API
         params = {
@@ -190,6 +193,7 @@ def inference(l_args, s_ticker):
 
 def sentiment(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="sen",
         description="""
             Plot in-depth sentiment predicted from tweets from last days
@@ -226,6 +230,8 @@ def sentiment(l_args, s_ticker):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Setup API request params and headers
         headers = {"authorization": f"Bearer {cfg.API_TWITTER_BEARER_TOKEN}"}
@@ -351,7 +357,6 @@ def sentiment(l_args, s_ticker):
             df_tweets["created_at"].values[0], "%Y-%m-%d %H:%M:%S"
         ).day
         n_idx = 0
-        n_next_idx = 0
         for n_next_idx, dt_created in enumerate(df_tweets["created_at"]):
             if datetime.strptime(dt_created, "%Y-%m-%d %H:%M:%S").day > n_day:
                 l_xticks.append(n_next_idx)

@@ -1,13 +1,21 @@
 import argparse
-from gamestonk_terminal.discovery import alpha_vantage_api
-from gamestonk_terminal.discovery import yahoo_finance_api
-from gamestonk_terminal.discovery import finviz_api
-from gamestonk_terminal.discovery import short_interest_api
-from gamestonk_terminal.discovery import seeking_alpha_api
-from gamestonk_terminal.discovery import fidelity_api
-from gamestonk_terminal.discovery import simply_wallst_api
-from gamestonk_terminal.discovery import spachero_api
-from gamestonk_terminal.discovery import unusual_whales_api
+
+from gamestonk_terminal.discovery import (
+    alpha_vantage_api,
+    ark_api,
+    fidelity_api,
+    finviz_api,
+    seeking_alpha_api,
+    short_interest_api,
+    simply_wallst_api,
+    spachero_api,
+    unusual_whales_api,
+    yahoo_finance_api,
+)
+from gamestonk_terminal import feature_flags as gtff
+from gamestonk_terminal.helper_funcs import get_flair
+from gamestonk_terminal.menu import session
+from prompt_toolkit.completion import NestedCompleter
 
 
 def print_discovery():
@@ -21,7 +29,9 @@ def print_discovery():
     print("   map           S&P500 index stocks map [Finviz]")
     print("   sectors       show sectors performance [Alpha Vantage]")
     print("   gainers       show latest top gainers [Yahoo Finance]")
+    print("   losers        show latest top losers [Yahoo Finance]")
     print("   orders        orders by Fidelity Customers [Fidelity]")
+    print("   ark_orders    orders by ARK Investment Management LLC")
     print("   up_earnings   upcoming earnings release dates [Seeking Alpha]")
     print(
         "   high_short    show top high short interest stocks of over 20% ratio [www.highshortinterest.com]"
@@ -39,34 +49,41 @@ def print_discovery():
 def disc_menu():
 
     # Add list of arguments that the discovery parser accepts
-    disc_parser = argparse.ArgumentParser(prog="discovery", add_help=False)
-    disc_parser.add_argument(
-        "cmd",
-        choices=[
-            "help",
-            "q",
-            "quit",
-            "map",
-            "sectors",
-            "gainers",
-            "spacs",
-            "orders",
-            "spachero",
-            "high_short",
-            "low_float",
-            "up_earnings",
-            "simply_wallst",
-            "uwhales",
-            "mill",
-        ],
-    )
+    disc_parser = argparse.ArgumentParser(add_help=False, prog="discovery")
+    choices = [
+        "help",
+        "q",
+        "quit",
+        "map",
+        "sectors",
+        "gainers",
+        "losers",
+        "spacs",
+        "orders",
+        "ark_orders",
+        "spachero",
+        "high_short",
+        "low_float",
+        "up_earnings",
+        "simply_wallst",
+        "uwhales",
+        "mill",
+    ]
+    disc_parser.add_argument("cmd", choices=choices)
+    completer = NestedCompleter.from_nested_dict({c: None for c in choices})
 
     print_discovery()
 
     # Loop forever and ever
     while True:
         # Get input command from user
-        as_input = input("> ")
+        if session and gtff.USE_PROMPT_TOOLKIT:
+            as_input = session.prompt(
+                f"{get_flair()} (disc)> ",
+                completer=completer,
+            )
+        else:
+            as_input = input(f"{get_flair()} (disc)> ")
 
         # Parse fundamental analysis command of the list of possible commands
         try:
@@ -96,6 +113,9 @@ def disc_menu():
         elif ns_known_args.cmd == "gainers":
             yahoo_finance_api.gainers(l_args)
 
+        elif ns_known_args.cmd == "losers":
+            yahoo_finance_api.losers(l_args)
+
         elif ns_known_args.cmd == "spachero":
             spachero_api.spachero(l_args)
 
@@ -104,6 +124,9 @@ def disc_menu():
 
         elif ns_known_args.cmd == "orders":
             fidelity_api.orders(l_args)
+
+        elif ns_known_args.cmd == "ark_orders":
+            ark_api.ark_orders(l_args)
 
         elif ns_known_args.cmd == "simply_wallst":
             simply_wallst_api.simply_wallst(l_args)

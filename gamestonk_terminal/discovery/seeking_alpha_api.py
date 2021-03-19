@@ -11,6 +11,7 @@ from gamestonk_terminal.helper_funcs import (
 
 def earnings_release_dates(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="up_earnings",
         description="""Upcoming earnings release dates. [Source: Seeking Alpha]""",
     )
@@ -35,6 +36,8 @@ def earnings_release_dates(l_args):
     )
 
     ns_parser = parse_known_args_and_warn(parser, l_args)
+    if not ns_parser:
+        return
 
     l_earnings = list()
     for idx in range(0, ns_parser.n_pages):
@@ -61,7 +64,7 @@ def earnings_release_dates(l_args):
     df_earnings["Date"] = pd.to_datetime(df_earnings["Date"])
     df_earnings = df_earnings.set_index("Date")
 
-    pd.set_option("display.max_colwidth", -1)
+    pd.set_option("display.max_colwidth", None)
     for n_days, earning_date in enumerate(df_earnings.index.unique()):
         if n_days > (ns_parser.n_num - 1):
             break

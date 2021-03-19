@@ -1,12 +1,19 @@
 import argparse
 
-from gamestonk_terminal.prediction_techniques import sma
-from gamestonk_terminal.prediction_techniques import knn
-from gamestonk_terminal.prediction_techniques import regression
-from gamestonk_terminal.prediction_techniques import arima
-from gamestonk_terminal.prediction_techniques import fbprophet
-from gamestonk_terminal.prediction_techniques import neural_networks
 import matplotlib.pyplot as plt
+from gamestonk_terminal import feature_flags as gtff
+from gamestonk_terminal.helper_funcs import get_flair
+from gamestonk_terminal.menu import session
+from gamestonk_terminal.prediction_techniques import (
+    arima,
+    ets,
+    fbprophet,
+    knn,
+    neural_networks,
+    regression,
+    sma,
+)
+from prompt_toolkit.completion import NestedCompleter
 
 
 def print_prediction(s_ticker, s_start, s_interval):
@@ -25,6 +32,7 @@ def print_prediction(s_ticker, s_start, s_interval):
     print("   quit        quit to abandon program")
     print("")
     print("   sma         simple moving average")
+    print("   ets         exponential smoothing (e.g. Holt-Winters)")
     print("   knn         k-Nearest Neighbors")
     print("   linear      linear regression (polynomial 1)")
     print("   quadratic   quadratic regression (polynomial 2)")
@@ -42,35 +50,41 @@ def pred_menu(df_stock, s_ticker, s_start, s_interval):
 
     # Add list of arguments that the prediction techniques parser accepts
     pred_parser = argparse.ArgumentParser(prog="pred", add_help=False)
-    pred_parser.add_argument(
-        "cmd",
-        choices=[
-            "help",
-            "q",
-            "quit",
-            "sma",
-            "knn",
-            "linear",
-            "quadratic",
-            "cubic",
-            "regression",
-            "arima",
-            "prophet",
-            "mlp",
-            "rnn",
-            "lstm",
-        ],
-    )
+    choices = [
+        "help",
+        "q",
+        "quit",
+        "sma",
+        "ets",
+        "knn",
+        "linear",
+        "quadratic",
+        "cubic",
+        "regression",
+        "arima",
+        "prophet",
+        "mlp",
+        "rnn",
+        "lstm",
+    ]
+    pred_parser.add_argument("cmd", choices=choices)
+    completer = NestedCompleter.from_nested_dict({c: None for c in choices})
 
     print_prediction(s_ticker, s_start, s_interval)
 
     # Loop forever and ever
     while True:
         # Get input command from user
-        as_input = input("> ")
+        if session and gtff.USE_PROMPT_TOOLKIT:
+            as_input = session.prompt(
+                f"{get_flair()} (pred)> ",
+                completer=completer,
+            )
+        else:
+            as_input = input(f"{get_flair()} (pred)> ")
 
         # Images are non blocking - allows to close them if we type other command
-        plt.close()
+        plt.close("all")
 
         # Parse prediction techniques command of the list of possible commands
         try:
@@ -93,6 +107,9 @@ def pred_menu(df_stock, s_ticker, s_start, s_interval):
 
         elif ns_known_args.cmd == "sma":
             sma.simple_moving_average(l_args, s_ticker, df_stock)
+
+        elif ns_known_args.cmd == "ets":
+            ets.exponential_smoothing(l_args, s_ticker, df_stock)
 
         elif ns_known_args.cmd == "knn":
             knn.k_nearest_neighbors(l_args, s_ticker, df_stock)

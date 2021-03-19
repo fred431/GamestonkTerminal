@@ -2,13 +2,20 @@ import argparse
 import matplotlib.pyplot as plt
 import pandas_ta as ta
 from pandas.plotting import register_matplotlib_converters
-from gamestonk_terminal.helper_funcs import check_positive, parse_known_args_and_warn
+from gamestonk_terminal.helper_funcs import (
+    check_positive,
+    parse_known_args_and_warn,
+    plot_autoscale,
+)
+from gamestonk_terminal.config_plot import PLOT_DPI
+from gamestonk_terminal import feature_flags as gtff
 
 register_matplotlib_converters()
 
 
 def cci(l_args, s_ticker, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="cci",
         description="""
             The CCI is designed to detect beginning and ending market trends.
@@ -49,6 +56,8 @@ def cci(l_args, s_ticker, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Daily
         if s_interval == "1440min":
@@ -72,7 +81,7 @@ def cci(l_args, s_ticker, s_interval, df_stock):
                 offset=ns_parser.n_offset,
             ).dropna()
 
-        plt.figure()
+        plt.figure(figsize=plot_autoscale(), dpi=PLOT_DPI)
         plt.subplot(211)
         plt.title(f"Commodity Channel Index (CCI) on {s_ticker}")
         if s_interval == "1440min":
@@ -98,7 +107,10 @@ def cci(l_args, s_ticker, s_interval, df_stock):
         plt.gca().twinx()
         plt.ylim(plt.gca().get_ylim())
         plt.yticks([0.2, 0.8], ("OVERSOLD", "OVERBOUGHT"))
-        plt.ion()
+
+        if gtff.USE_ION:
+            plt.ion()
+
         plt.show()
 
         print("")
@@ -110,6 +122,7 @@ def cci(l_args, s_ticker, s_interval, df_stock):
 
 def macd(l_args, s_ticker, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="macd",
         description="""
             The Moving Average Convergence Divergence (MACD) is the difference
@@ -162,6 +175,8 @@ def macd(l_args, s_ticker, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Daily
         if s_interval == "1440min":
@@ -183,7 +198,7 @@ def macd(l_args, s_ticker, s_interval, df_stock):
                 offset=ns_parser.n_offset,
             ).dropna()
 
-        plt.figure()
+        plt.figure(figsize=plot_autoscale(), dpi=PLOT_DPI)
         plt.subplot(211)
         plt.title(f"Moving Average Convergence Divergence (MACD) on {s_ticker}")
         if s_interval == "1440min":
@@ -211,7 +226,10 @@ def macd(l_args, s_ticker, s_interval, df_stock):
         plt.minorticks_on()
         plt.grid(b=True, which="minor", color="#999999", linestyle="-", alpha=0.2)
         plt.xlabel("Time")
-        plt.ion()
+
+        if gtff.USE_ION:
+            plt.ion()
+
         plt.show()
         print("")
 
@@ -222,6 +240,7 @@ def macd(l_args, s_ticker, s_interval, df_stock):
 
 def rsi(l_args, s_ticker, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="rsi",
         description="""
             The Relative Strength Index (RSI) calculates a ratio of the
@@ -271,6 +290,8 @@ def rsi(l_args, s_ticker, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Daily
         if s_interval == "1440min":
@@ -292,7 +313,7 @@ def rsi(l_args, s_ticker, s_interval, df_stock):
                 offset=ns_parser.n_offset,
             ).dropna()
 
-        plt.figure()
+        plt.figure(figsize=plot_autoscale(), dpi=PLOT_DPI)
         plt.subplot(211)
         if s_interval == "1440min":
             plt.plot(df_stock.index, df_stock["5. adjusted close"].values, "k", lw=2)
@@ -319,7 +340,10 @@ def rsi(l_args, s_ticker, s_interval, df_stock):
         plt.gca().twinx()
         plt.ylim(plt.gca().get_ylim())
         plt.yticks([0.15, 0.85], ("OVERSOLD", "OVERBOUGHT"))
-        plt.ion()
+
+        if gtff.USE_ION:
+            plt.ion()
+
         plt.show()
 
         print("")
@@ -331,6 +355,7 @@ def rsi(l_args, s_ticker, s_interval, df_stock):
 
 def stoch(l_args, s_ticker, s_interval, df_stock):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="stoch",
         description="""
             The Stochastic Oscillator measures where the close is in relation
@@ -380,6 +405,8 @@ def stoch(l_args, s_ticker, s_interval, df_stock):
 
     try:
         ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         # Daily
         if s_interval == "1440min":
@@ -405,7 +432,7 @@ def stoch(l_args, s_ticker, s_interval, df_stock):
                 offset=ns_parser.n_offset,
             ).dropna()
 
-        plt.figure()
+        plt.figure(figsize=plot_autoscale(), dpi=PLOT_DPI)
         plt.subplot(211)
         if s_interval == "1440min":
             plt.plot(df_stock.index, df_stock["5. adjusted close"].values, "k", lw=2)
@@ -434,7 +461,10 @@ def stoch(l_args, s_ticker, s_interval, df_stock):
         plt.gca().twinx()
         plt.ylim(plt.gca().get_ylim())
         plt.yticks([0.1, 0.9], ("OVERSOLD", "OVERBOUGHT"))
-        plt.ion()
+
+        if gtff.USE_ION:
+            plt.ion()
+
         plt.show()
 
         print("")

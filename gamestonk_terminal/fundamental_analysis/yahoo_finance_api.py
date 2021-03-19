@@ -11,6 +11,7 @@ from gamestonk_terminal.helper_funcs import (
 
 def info(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="info",
         description="""
             Print information about the company. The following fields are expected:
@@ -35,7 +36,9 @@ def info(l_args, s_ticker):
     )
 
     try:
-        parse_known_args_and_warn(parser, l_args)
+        ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         stock = yf.Ticker(s_ticker)
         df_info = pd.DataFrame(stock.info.items(), columns=["Metric", "Value"])
@@ -66,7 +69,7 @@ def info(l_args, s_ticker):
         df_info.index = df_info.index.str.replace("p e", "PE")
         df_info.index = df_info.index.str.replace("Peg", "PEG")
 
-        pd.set_option("display.max_colwidth", -1)
+        pd.set_option("display.max_colwidth", None)
 
         if "Long business summary" in df_info.index:
             print(df_info.drop(index=["Long business summary"]).to_string(header=False))
@@ -85,16 +88,19 @@ def info(l_args, s_ticker):
 
 def shareholders(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="shrs",
         description="""Print Major, institutional and mutualfunds shareholders.
         [Source: Yahoo Finance]""",
     )
 
     try:
-        parse_known_args_and_warn(parser, l_args)
+        ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         stock = yf.Ticker(s_ticker)
-        pd.set_option("display.max_colwidth", -1)
+        pd.set_option("display.max_colwidth", None)
 
         # Major holders
         print("Major holders")
@@ -150,6 +156,7 @@ def shareholders(l_args, s_ticker):
 
 def sustainability(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="sust",
         description="""
             Print sustainability values of the company. The following fields are expected:
@@ -162,10 +169,12 @@ def sustainability(l_args, s_ticker):
     )
 
     try:
-        parse_known_args_and_warn(parser, l_args)
+        ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         stock = yf.Ticker(s_ticker)
-        pd.set_option("display.max_colwidth", -1)
+        pd.set_option("display.max_colwidth", None)
 
         df_sustainability = stock.sustainability
 
@@ -202,6 +211,7 @@ def sustainability(l_args, s_ticker):
 
 def calendar_earnings(l_args, s_ticker):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="cal",
         description="""
             Calendar earnings of the company. Including revenue and earnings estimates.
@@ -210,7 +220,9 @@ def calendar_earnings(l_args, s_ticker):
     )
 
     try:
-        parse_known_args_and_warn(parser, l_args)
+        ns_parser = parse_known_args_and_warn(parser, l_args)
+        if not ns_parser:
+            return
 
         stock = yf.Ticker(s_ticker)
         df_calendar = stock.calendar

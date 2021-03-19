@@ -18,12 +18,13 @@ API_REDDIT_USERNAME = os.getenv("GT_API_REDDIT_USERNAME") or "REPLACE_ME"
 API_REDDIT_USER_AGENT = os.getenv("GT_API_REDDIT_USER_AGENT") or "REPLACE_ME"
 API_REDDIT_PASSWORD = os.getenv("GT_API_REDDIT_PASSWORD") or "REPLACE_ME"
 
+# https://polygon.io
+API_POLYGON_KEY = os.getenv("GT_API_POLYGON_KEY") or "REPLACE_ME"
+
 # https://developer.twitter.com
 API_TWITTER_KEY = os.getenv("GT_API_TWITTER_KEY") or "REPLACE_ME"
 API_TWITTER_SECRET_KEY = os.getenv("GT_API_TWITTER_SECRET_KEY") or "REPLACE_ME"
 API_TWITTER_BEARER_TOKEN = os.getenv("GT_API_TWITTER_BEARER_TOKEN") or "REPLACE_ME"
 
-USE_COLOR = True
-
-# Enable Prediction features
-ENABLE_PREDICT = False
+# https://fred.stlouisfed.org/docs/api/api_key.html
+API_FRED_KEY = os.getenv("GT_FRED_API_KEY") or "REPLACE_ME"

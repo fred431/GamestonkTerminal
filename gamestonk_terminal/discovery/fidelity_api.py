@@ -11,7 +11,7 @@ from gamestonk_terminal.helper_funcs import (
     patch_pandas_text_adjustment,
     parse_known_args_and_warn,
 )
-from gamestonk_terminal.config_terminal import USE_COLOR
+from gamestonk_terminal import feature_flags as gtff
 
 
 def buy_sell_ratio_color_red_green(val: str) -> str:
@@ -42,6 +42,7 @@ def price_change_color_red_green(val: str) -> str:
 
 def orders(l_args):
     parser = argparse.ArgumentParser(
+        add_help=False,
         prog="orders",
         description="""
             Orders by Fidelity customers. Information shown in the table below
@@ -62,6 +63,8 @@ def orders(l_args):
     )
 
     ns_parser = parse_known_args_and_warn(parser, l_args)
+    if not ns_parser:
+        return
 
     url_orders = (
         "https://eresearch.fidelity.com/eresearch/gotoBL/fidelityTopOrders.jhtml"
@@ -132,9 +135,9 @@ def orders(l_args):
         + ":"
     )
 
-    pd.set_option("display.max_colwidth", -1)
+    pd.set_option("display.max_colwidth", None)
 
-    if USE_COLOR:
+    if gtff.USE_COLOR:
         df_orders["Buy / Sell Ratio"] = df_orders["Buy / Sell Ratio"].apply(
             buy_sell_ratio_color_red_green
         )
