@@ -53,6 +53,8 @@ def print_help(s_ticker, s_start, s_interval, b_is_market_open):
     print(
         "   fred        economic data, \t\t\t from: Federal Reserve Bank of St. Louis "
     )
+    print("   pa          portfolio analysis, \t\t Currently Supported: Robinhood ")
+    print("   crypto      cryptocurrencies, \t\t coingecko api")
 
     if s_ticker:
         print(
@@ -74,7 +76,13 @@ def print_help(s_ticker, s_start, s_interval, b_is_market_open):
             "   dd          in-depth due-diligence,  \t e.g.: news, analyst, shorts, insider, sec"
         )
         print(
+            "   eda         exploratory data analysis,\t e.g.: decompose, cusum, residuals analysis"
+        )
+        print(
             "   pred        prediction techniques,   \t e.g.: regression, arima, rnn, lstm, prophet"
+        )
+        print(
+            "   ra          residuals analysis,      \t e.g.: model fit, qqplot, hypothesis test"
         )
         print("   op          options info,            \t e.g.: volume")
     print("")
@@ -118,6 +126,7 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
         "-s",
         "--start",
         type=valid_date,
+        default="2015-01-01",
         dest="s_start_date",
         help="The starting date (format YYYY-MM-DD) of the stock",
     )
@@ -156,7 +165,7 @@ def load(l_args, s_ticker, s_start, s_interval, df_stock):
         return [s_ticker, s_start, s_interval, df_stock]
 
     # Update values:
-    s_ticker = ns_parser.s_ticker
+    s_ticker = ns_parser.s_ticker.upper()
     s_start = ns_parser.s_start_date
     s_interval = str(ns_parser.n_interval) + "min"
 
@@ -277,6 +286,7 @@ def candle(s_ticker: str, s_start: str):
             candle_linewidth=1.0, candle_width=0.8, volume_linewidth=1.0
         ),
     )
+    print("")
 
 
 def view(l_args, s_ticker, s_start, s_interval, df_stock):

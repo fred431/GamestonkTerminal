@@ -132,6 +132,21 @@ This is a library for package management, and ensures a smoother experience than
 python terminal.py
 ```
 
+### Advanced User Install - Python 3.8
+
+*Note that the `conda deactivate` -> `conda activate` in the middle is on purpose, this is sometimes required to avoid issues with poetry*
+
+```
+conda create -n gst python=3.8.8
+conda activate gst
+conda install poetry
+conda deactivate
+conda activate gst
+poetry install
+conda install -c conda-forge fbprophet numpy=1.19.5 hdf5=1.10.5
+poetry install -E prediction
+```
+
 ### Advanced User Install - Machine Learning
 
 If you are an advanced user and use other Python distributions, we have several requirements.txt documents that you can pick from to download project dependencies.
@@ -145,8 +160,15 @@ Note: The libraries specified in the [requirements.txt](/requirements.txt) file 
 ENABLE_PREDICT = os.getenv("GTFF_ENABLE_PREDICT") or True
 ```
 
-* Install optional ML features dependencies collection with poetry:
+* Install optional ML features dependencies:
 ```
+poetry install -E prediction
+```
+*If you run into issues installing or `Cannot convert a symbolic Tensor...` at runtime, try this:*
+
+```
+conda install -c conda-forge fbprophet numpy=1.19.5 hdf5=1.10.5
+poetry install
 poetry install -E prediction
 ```
 
@@ -157,10 +179,40 @@ poetry install -E prediction
 
 Note: The problem with docker is that it won't output matplotlib figures.
 
-*Commands that may help you in case of an error:*
-* `conda install -c conda-forge fbprophet -y`
+*Commands that may help you in case of an error:
+
 * `python -m pip install --upgrade pip`
 * `pip install pystan --upgrade`
+* `poetry update --lock`
+
+### Other issues
+
+If you run into trouble with poetry and the advice above did not help, your best bet is to try
+
+1. `poetry update --lock`
+
+2. `conda deactivate` -> `conda activate gst`, then try again
+
+3. Delete the poetry cache, then try again
+
+   | Platform | Location                        |
+   | -------- | ------------------------------- |
+   | Linux    | "~/.cache/pypoetry"             |
+   | Mac      | "~/Library/Caches/pypoetry"     |
+   | Windows  | "%localappdata%/pypoetry/cache" |
+
+4. Track down the offensive package and purge it from your anaconda `<environment_name>` folder, then try again (removing through conda can sometimes leave locks behind)
+
+   | Platform  | Location                                     |
+   | --------- | -------------------------------------------- |
+   | Linux/Mac | "~/anaconda3/envs" or "~/opt/anaconda3/envs" |
+   | Windows   | "%userprofile%/anaconda3/envs"               |
+
+5. Completely nuke your conda environment folder and make a new environment from scratch
+
+6. Reboot your computer and try again
+
+7. Submit a ticket on github
 
 ### API Keys
 
@@ -173,10 +225,12 @@ These are the ones where a key is necessary:
   * Twitter: https://developer.twitter.com
   * Polygon: https://polygon.io
   * Financial Modeling Prep: https://financialmodelingprep.com/developer
+  * FRED: https://fred.stlouisfed.org/docs/api/api_key.html
+  * News API: https://newsapi.org
 
 When these are obtained, don't forget to update [config_terminal.py](/gamestonk_terminal/config_terminal.py).
 
-Alternatively, you can also set them to the following environment variables: GT_API_KEY_ALPHAVANTAGE, GT_API_KEY_FINANCIALMODELINGPREP, GT_API_KEY_QUANDL, GT_API_REDDIT_CLIENT_ID, GT_API_REDDIT_CLIENT_SECRET, GT_API_REDDIT_USERNAME, GT_API_REDDIT_USER_AGENT, GT_API_REDDIT_PASSWORD, GT_API_TWITTER_KEY, GT_API_TWITTER_SECRET_KEY, GT_API_TWITTER_BEARER_TOKEN, GT_API_POLYGON_KEY.
+Alternatively, you can also set them to the following environment variables: GT_API_KEY_ALPHAVANTAGE, GT_API_KEY_FINANCIALMODELINGPREP, GT_API_KEY_QUANDL, GT_API_REDDIT_CLIENT_ID, GT_API_REDDIT_CLIENT_SECRET, GT_API_REDDIT_USERNAME, GT_API_REDDIT_USER_AGENT, GT_API_REDDIT_PASSWORD, GT_API_TWITTER_KEY, GT_API_TWITTER_SECRET_KEY, GT_API_TWITTER_BEARER_TOKEN, GT_API_POLYGON_KEY, GT_FRED_API_KEY, GT_API_NEWS_TOKEN.
 
 Example:
 ```
@@ -274,12 +328,14 @@ Distributed under the MIT License. See [LICENSE](https://github.com/DidierRLopes
 
 [Artem Veremy](https://www.linkedin.com/in/veremey/) - artem@veremey.net
 
+[James Maslek](https://www.linkedin.com/in/james-maslek-b6810186/) - jmaslek11@gmail.com
 ## Acknowledgments
 
 * [VICE article](https://www.vice.com/en/article/qjp9vp/gamestonk-terminal-is-a-diy-meme-stock-version-of-bloomberg-terminal)
 * [Daily Fintech article](https://dailyfintech.com/2021/02/25/never-underestimate-bloomberg-but-here-are-5-reasons-why-the-gamestonk-terminal-is-a-contender/)
 * [HackerNews](https://news.ycombinator.com/item?id=26258773)
-* [Reddit](https://www.reddit.com/r/algotrading/comments/lrndzi/cant_afford_the_bloomberg_terminal_no_worries_i/)
+* [Reddit r/algotrading](https://www.reddit.com/r/algotrading/comments/m4uvza/gamestonk_terminal_the_next_best_thing_after/)
+* [Reddit r/Python](https://www.reddit.com/r/Python/comments/m515yk/gamestonk_terminal_the_equivalent_to_an/)
 
 
 <!-- MARKDOWN LINKS & IMAGES -->

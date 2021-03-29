@@ -6,11 +6,13 @@ import sys
 import os
 from datetime import datetime, timedelta
 import pandas as pd
+import yfinance as yf
 from alpha_vantage.timeseries import TimeSeries
 from prompt_toolkit.completion import NestedCompleter
 
 from gamestonk_terminal import config_terminal as cfg
 from gamestonk_terminal import feature_flags as gtff
+from gamestonk_terminal import thought_of_the_day as thought
 from gamestonk_terminal import res_menu as rm
 from gamestonk_terminal.discovery import disc_menu as dm
 from gamestonk_terminal.due_diligence import dd_menu as ddm
@@ -21,21 +23,26 @@ from gamestonk_terminal.menu import session
 from gamestonk_terminal.papermill import papermill_controller as mill
 from gamestonk_terminal.behavioural_analysis import ba_controller
 from gamestonk_terminal.technical_analysis import ta_menu as tam
-from gamestonk_terminal.comparison_analysis import ca_menu as cam
-from gamestonk_terminal.options import op_menu as opm
+from gamestonk_terminal.comparison_analysis import ca_controller
+from gamestonk_terminal.exploratory_data_analysis import eda_controller
+from gamestonk_terminal.options import op_controller
 from gamestonk_terminal.fred import fred_menu as fm
+from gamestonk_terminal.residuals_analysis import ra_controller
+from gamestonk_terminal.portfolio import port_controller
+from gamestonk_terminal.cryptocurrency import crypto_controller
 
 # import warnings
 # warnings.simplefilter("always")
 
 
 # pylint: disable=too-many-branches
+
+
 def main():
     """
     Gamestonk Terminal is an awesome stock market terminal that has been developed for fun,
     while I saw my GME shares tanking. But hey, I like the stock.
     """
-
     # Enable VT100 Escape Sequence for WINDOWS 10 Ver. 1607
     if sys.platform == "win32":
         os.system("")
@@ -71,10 +78,14 @@ def main():
         "fa",
         "ta",
         "dd",
+        "eda",
         "pred",
         "ca",
         "op",
         "fred",
+        "pa",
+        "crypto",
+        "ra",
     ]
     menu_parser.add_argument("opt", choices=choices)
     completer = NestedCompleter.from_nested_dict({c: None for c in choices})
@@ -82,6 +93,15 @@ def main():
     # Print first welcome message and help
     print("\nWelcome to Gamestonk Terminal 🚀\n")
     should_print_help = True
+    parsed_stdin = False
+
+    if gtff.ENABLE_THOUGHTS_DAY:
+        print("-------------------")
+        try:
+            thought.get_thought_of_the_day()
+        except Exception as e:
+            print(e)
+        print("")
 
     # Loop forever and ever
     while True:
@@ -90,8 +110,12 @@ def main():
             print_help(s_ticker, s_start, s_interval, b_is_stock_market_open())
             should_print_help = False
 
-        # Get input command from user
-        if session and gtff.USE_PROMPT_TOOLKIT:
+        # Get input command from stdin or user
+        if not parsed_stdin and len(sys.argv) > 1:
+            as_input = " ".join(sys.argv[1:])
+            parsed_stdin = True
+            print(f"{get_flair()}> {as_input}")
+        elif session and gtff.USE_PROMPT_TOOLKIT:
             as_input = session.prompt(f"{get_flair()}> ", completer=completer)
         else:
             as_input = input(f"{get_flair()}> ")
@@ -138,7 +162,8 @@ def main():
 
             else:
                 print(
-                    "No ticker selected. Use 'load ticker' to load the ticker you want to look at."
+                    "No ticker selected. Use 'load ticker' to load the ticker you want to look at.",
+                    "\n",
                 )
 
             main_cmd = True
@@ -171,7 +196,7 @@ def main():
             b_quit = rm.res_menu(s_ticker, s_start, s_interval)
 
         elif ns_known_args.opt == "ca":
-            b_quit = cam.ca_menu(df_stock, s_ticker, s_start, s_interval)
+            b_quit = ca_controller.menu(df_stock, s_ticker, s_start, s_interval)
 
         elif ns_known_args.opt == "fa":
             b_quit = fam.fa_menu(s_ticker, s_start, s_interval)
@@ -182,11 +207,37 @@ def main():
         elif ns_known_args.opt == "dd":
             b_quit = ddm.dd_menu(df_stock, s_ticker, s_start, s_interval)
 
+        elif ns_known_args.opt == "eda":
+            if s_interval == "1440min":
+                b_quit = eda_controller.menu(df_stock, s_ticker, s_start, s_interval)
+            else:
+                df_stock = yf.download(s_ticker, start=s_start, progress=False)
+                df_stock = df_stock.rename(
+                    columns={
+                        "Open": "1. open",
+                        "High": "2. high",
+                        "Low": "3. low",
+                        "Close": "4. close",
+                        "Adj Close": "5. adjusted close",
+                        "Volume": "6. volume",
+                    }
+                )
+                df_stock.index.name = "date"
+                s_interval = "1440min"
+
+                b_quit = eda_controller.menu(df_stock, s_ticker, s_start, s_interval)
+
         elif ns_known_args.opt == "op":
-            b_quit = opm.opt_menu(s_ticker)
+            b_quit = op_controller.menu(s_ticker)
 
         elif ns_known_args.opt == "fred":
             b_quit = fm.fred_menu()
+
+        elif ns_known_args.opt == "pa":
+            b_quit = port_controller.menu()
+
+        elif ns_known_args.opt == "crypto":
+            b_quit = crypto_controller.menu()
 
         elif ns_known_args.opt == "pred":
 
@@ -235,6 +286,9 @@ def main():
                     print(e)
                     print("Either the ticker or the API_KEY are invalids. Try again!")
                     return
+
+        elif ns_known_args.opt == "ra":
+            b_quit = ra_controller.menu(df_stock, s_ticker, s_start, s_interval)
 
         else:
             print("Shouldn't see this command!")
