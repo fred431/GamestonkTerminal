@@ -14,7 +14,7 @@ from gamestonk_terminal import config_terminal as cfg
 from gamestonk_terminal import feature_flags as gtff
 from gamestonk_terminal import thought_of_the_day as thought
 from gamestonk_terminal import res_menu as rm
-from gamestonk_terminal.discovery import disc_menu as dm
+from gamestonk_terminal.discovery import disc_controller
 from gamestonk_terminal.due_diligence import dd_menu as ddm
 from gamestonk_terminal.fundamental_analysis import fa_menu as fam
 from gamestonk_terminal.helper_funcs import b_is_stock_market_open, get_flair
@@ -22,11 +22,11 @@ from gamestonk_terminal.main_helper import clear, export, load, print_help, view
 from gamestonk_terminal.menu import session
 from gamestonk_terminal.papermill import papermill_controller as mill
 from gamestonk_terminal.behavioural_analysis import ba_controller
-from gamestonk_terminal.technical_analysis import ta_menu as tam
+from gamestonk_terminal.technical_analysis import ta_controller
 from gamestonk_terminal.comparison_analysis import ca_controller
 from gamestonk_terminal.exploratory_data_analysis import eda_controller
 from gamestonk_terminal.options import op_controller
-from gamestonk_terminal.fred import fred_menu as fm
+from gamestonk_terminal.fred import fred_controller
 from gamestonk_terminal.residuals_analysis import ra_controller
 from gamestonk_terminal.portfolio import port_controller
 from gamestonk_terminal.cryptocurrency import crypto_controller
@@ -184,7 +184,7 @@ def main():
             main_cmd = True
 
         elif ns_known_args.opt == "disc":
-            b_quit = dm.disc_menu()
+            b_quit = disc_controller.menu()
 
         elif ns_known_args.opt == "mill":
             b_quit = mill.papermill_menu()
@@ -202,7 +202,7 @@ def main():
             b_quit = fam.fa_menu(s_ticker, s_start, s_interval)
 
         elif ns_known_args.opt == "ta":
-            b_quit = tam.ta_menu(df_stock, s_ticker, s_start, s_interval)
+            b_quit = ta_controller.menu(df_stock, s_ticker, s_start, s_interval)
 
         elif ns_known_args.opt == "dd":
             b_quit = ddm.dd_menu(df_stock, s_ticker, s_start, s_interval)
@@ -231,7 +231,7 @@ def main():
             b_quit = op_controller.menu(s_ticker)
 
         elif ns_known_args.opt == "fred":
-            b_quit = fm.fred_menu()
+            b_quit = fred_controller.menu()
 
         elif ns_known_args.opt == "pa":
             b_quit = port_controller.menu()
