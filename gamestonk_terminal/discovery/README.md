@@ -2,10 +2,12 @@
 
 This menu aims to discover new stocks, and the usage of the following commands along with an example will be exploited below.
 
+* [ipo](#ipo)
+  * past and future IPOs [Finnhub]
 * [map](#map)
   * S&P500 index stocks map [Finviz]
-* [sectors](#sectors)
-  * show sectors performance [Alpha Vantage]
+* [rtp_sectors](#rtp_sectors)
+  * real-time performance sectors [Alpha Vantage]
 * [gainers](#gainers)
   * show latest top gainers [Yahoo Finance]
 * [losers](#losers)
@@ -26,6 +28,38 @@ This menu aims to discover new stocks, and the usage of the following commands a
   * great website for SPACs research [SpacHero]
 * [uwhales](#uwhales)
   * good website for SPACs research [UnusualWhales]
+* [valuation](#valuation)
+  * valuation of sectors, industry, country [Finviz]
+* [performance](#performance)
+  * performance of sectors, industry, country [Finviz]
+* [spectrum](#spectrum)
+  * spectrum of sectors, industry, country [Finviz]
+* [latest](#latest)
+  * latest news [Seeking Alpha]
+* [trending](#trending)
+  * trending news [Seeking Alpha]
+* [ratings](#ratings)
+  * top ratings updates [MarketBeat]
+* [darkpool](#darkpool)
+  * dark pool tickers with growing activity [FINRA]
+* [darkshort](#darkshort)
+  * dark pool short position [Stockgrid]
+* [shortvol](#shortvol)
+  * short interest and days to cover [Stockgrid]
+
+## ipo <a name="ipo"></a>
+
+```shell
+usage: ipo [-p PAST_DAYS] [-f FUTURE_DAYS]
+```
+
+Past and future IPOs. [Source: https://finnhub.io]
+
+* -p : Number of past days to look for IPOs. Default 0.
+* -f : Number of future days to look for IPOs. Default 10.
+
+<img width="1005" alt="Captura de ecrã 2021-05-03, às 12 54 44" src="https://user-images.githubusercontent.com/25267873/116873168-1e6ed900-ac0f-11eb-9d80-dddc8a754885.png">
+
 
 ## map <a name="map"></a>
 
@@ -40,10 +74,10 @@ Performance index stocks map categorized by sectors and industries. Size represe
 
 ![map_filter](https://user-images.githubusercontent.com/25267873/108570986-032a4800-7307-11eb-8c8d-f62409c11e06.png)
 
-## sectors <a name="sectors"></a>
+## rtp_sectors <a name="rtp_sectors"></a>
 
 ```shell
-usage: sectors
+usage: rtp_sectors
 ```
 
 Real-time and historical sector performances calculated from S&P500 incumbents. Pops plot in terminal. [Source: Alpha Vantage]
@@ -167,3 +201,129 @@ usage: uwhales
 Good website for SPACs research. [Source: www.unusualwhales.com]
 
 <img width="1247" alt="Captura de ecrã 2021-02-20, às 11 38 54" src="https://user-images.githubusercontent.com/25267873/108594176-47056780-7370-11eb-8f2d-5972c8634974.png">
+
+## valuation <a name="valuation"></a>
+
+```shell
+usage: valuation [-g Sector,Industry,Industry (Basic Materials),Industry (Communication Services),
+Industry (Consumer Cyclical),Industry (Consumer Defensive),Industry (Energy),Industry (Financial),
+Industry (Healthcare),Industry (Industrials),Industry (Real Estate),Industry (Technology),
+Industry (Utilities),Country (U.S. listed stocks only),Capitalization]
+```
+
+valuation of sectors, industry, country. [Source: Finviz]
+* -g : Data group (sector, industry or country). Default: Sector.
+
+<img width="1020" alt="sec_val" src="https://user-images.githubusercontent.com/25267873/113647490-d2b62780-9682-11eb-8346-089bd0499ba9.png">
+
+
+## performance <a name="performance"></a>
+
+```shell
+usage: performance [-g Sector,Industry,Industry (Basic Materials),Industry (Communication Services),
+Industry (Consumer Cyclical),Industry (Consumer Defensive),Industry (Energy),Industry (Financial),
+Industry (Healthcare),Industry (Industrials),Industry (Real Estate),Industry (Technology),
+Industry (Utilities),Country (U.S. listed stocks only),Capitalization]
+```
+
+performance of sectors, industry, country. [Source: Finviz]
+* -g : Data group (sector, industry or country). Default: Sector.
+
+<img width="1034" alt="ind_per" src="https://user-images.githubusercontent.com/25267873/113647513-dba6f900-9682-11eb-9b43-c1055af85536.png">
+
+
+## spectrum <a name="spectrum"></a>
+
+```
+usage: spectrum [-g Sector,Industry,Industry (Basic Materials),Industry (Communication Services),
+Industry (Consumer Cyclical),Industry (Consumer Defensive),Industry (Energy),Industry (Financial),
+Industry (Healthcare),Industry (Industrials),Industry (Real Estate),Industry (Technology),
+Industry (Utilities),Country (U.S. listed stocks only),Capitalization]
+```
+
+Spectrum of sectors, industry, country. [Source: Finviz]
+* -g : Data group (sector, industry or country). Default: Sector.
+
+![cntry_spec](https://user-images.githubusercontent.com/25267873/113639067-48fd5e80-9670-11eb-95cf-0931845ddd12.png)
+
+
+## latest <a name="latest"></a>
+
+```
+usage: latest [-i N_ID] [-n N_NUM] [-d DATE]
+```
+
+Latest news articles. [Source: Seeking Alpha]
+* -i : Article ID number.
+* -n : Number of articles being printed. Default 10.
+* -d : Date of news article.
+
+<img width="1208" alt="latest" src="https://user-images.githubusercontent.com/25267873/115089633-926c6a00-9f0a-11eb-9d0e-1eedfd8ba7ce.png">
+
+
+## trending <a name="trending"></a>
+
+```
+usage: trending [-i N_ID] [-n N_NUM]
+```
+
+Trending news articles. [Source: Seeking Alpha]
+* -i : Article ID number.
+* -n : Number of articles being printed. Default 10.
+
+<img width="1213" alt="trending" src="https://user-images.githubusercontent.com/25267873/115089640-96988780-9f0a-11eb-9ca7-70a245fa3960.png">
+
+
+## ratings <a name="ratings"></a>
+
+```
+usage: ratings [-t N_THRESHOLD]
+```
+
+Top ratings updates. [Source: MarketBeat]
+
+* -t : Minimum threshold in percentage change between current and target price to show ratings. Default: 100.
+
+<img width="963" alt="ratings" src="https://user-images.githubusercontent.com/25267873/115095983-4544c400-9f1b-11eb-8869-8ec8a0f8eae0.png">
+
+
+## darkpool <a name="darkpool"></a>
+
+```
+usage: darkpool [-n N_NUM] [-t N_TOP]
+```
+
+Display dark pool (ATS) data of tickers with growing trades activity. [Source: FINRA]
+
+* -n : Number of tickers to filter from entire ATS data based on the sum of the total weekly shares quantity. Default: 1000.
+* -t : List of tickers from most promising with better linear regression slope. Default: 5.
+
+![darkpool](https://user-images.githubusercontent.com/25267873/115323195-8d642080-a17f-11eb-9ef8-d456ce769ab7.png)
+
+## darkshort <a name="darkshort"></a>
+
+```
+usage: darkshort [-n NUM] [-s {sv,sv_pct,nsv,nsv_dollar,dpp,dpp_dollar}]
+```
+Get dark pool short positions. [Source: Stockgrid]
+* -n: Number of top tickers to show
+* -s: Field for which to sort by, where 'sv': Short Vol. (1M), 'sv_pct': Short Vol. %, 'nsv': Net Short Vol. (1M), 'nsv_dollar': Net Short Vol. ($100M), 'dpp': DP Position (1M), 'dpp_dollar': DP Position ($1B). Default: dpp_dollar.
+* --export: Save dataframe as a csv file. Default: false.
+
+<img width="945" alt="darkshort" src="https://user-images.githubusercontent.com/25267873/122323732-76dc0a80-cf1f-11eb-9983-fd7688778016.png">
+
+
+## shortvol <a name="darkpool"></a>
+
+```
+usage: shortvol [-n NUM] [-s {float,dtc,si}] [-h]
+```
+
+Print short interest and days to cover. [Source: Stockgrid]
+* -n: Number of top tickers to show
+* -s: Field for which to sort by, where 'float': Float Short %, 'dtc': Days to Cover, 'si': Short Interest. Default: float.
+* -a: Data in ascending order. Default: false.
+* --export: Save dataframe as a csv file. Default: false.
+
+<img width="949" alt="shortvol" src="https://user-images.githubusercontent.com/25267873/122323861-af7be400-cf1f-11eb-9de2-5c7f2debddf0.png">
+

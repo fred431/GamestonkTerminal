@@ -2,9 +2,10 @@
 __docformat__ = "numpy"
 
 import argparse
+import os
 from typing import List
+from matplotlib import pyplot as plt
 from prompt_toolkit.completion import NestedCompleter
-
 from gamestonk_terminal import feature_flags as gtff
 from gamestonk_terminal.helper_funcs import get_flair
 from gamestonk_terminal.menu import session
@@ -19,19 +20,26 @@ from gamestonk_terminal.discovery import (
     spachero_view,
     unusual_whales_view,
     yahoo_finance_view,
+    marketbeat_view,
+    finra_ats_view,
+    finnhub_view,
+    stockgrid_view,
 )
 
 
 class DiscoveryController:
-    """ Discovery Controller """
+    """Discovery Controller"""
 
     # Command choices
     CHOICES = [
+        "?",
+        "cls",
         "help",
         "q",
         "quit",
+        "ipo",
         "map",
-        "sectors",
+        "rtp_sectors",
         "gainers",
         "losers",
         "orders",
@@ -42,10 +50,20 @@ class DiscoveryController:
         "simply_wallst",
         "spachero",
         "uwhales",
+        "valuation",
+        "performance",
+        "spectrum",
+        "ratings",
+        "latest",
+        "trending",
+        "darkpool",
+        "darkshort",
+        "shortvol",
     ]
 
     def __init__(self):
         """Constructor"""
+        self.spectrum_img_to_delete = ""
         self.disc_parser = argparse.ArgumentParser(add_help=False, prog="disc")
         self.disc_parser.add_argument(
             "cmd",
@@ -54,29 +72,46 @@ class DiscoveryController:
 
     @staticmethod
     def print_help():
-        """ Print help """
-
+        """Print help"""
+        print(
+            "https://github.com/GamestonkTerminal/GamestonkTerminal/tree/main/gamestonk_terminal/discovery"
+        )
         print("\nDiscovery Mode:")
-        print("   help          show this discovery menu again")
-        print("   q             quit this menu, and shows back to main menu")
-        print("   quit          quit to abandon program")
+        print("   cls            clear screen")
+        print("   ?/help         show this discovery menu again")
+        print("   q              quit this menu, and shows back to main menu")
+        print("   quit           quit to abandon program")
         print("")
-        print("   map           S&P500 index stocks map [Finviz]")
-        print("   sectors       show sectors performance [Alpha Vantage]")
-        print("   gainers       show latest top gainers [Yahoo Finance]")
-        print("   losers        show latest top losers [Yahoo Finance]")
-        print("   orders        orders by Fidelity Customers [Fidelity]")
-        print("   ark_orders    orders by ARK Investment Management LLC")
-        print("   up_earnings   upcoming earnings release dates [Seeking Alpha]")
+        print("   ipo            past and future IPOs [Finnhub]")
+        print("   map            S&P500 index stocks map [Finviz]")
+        print("   rtp_sectors    real-time performance sectors [Alpha Vantage]")
+        print("   gainers        show latest top gainers [Yahoo Finance]")
+        print("   losers         show latest top losers [Yahoo Finance]")
+        print("   orders         orders by Fidelity Customers [Fidelity]")
         print(
-            "   high_short    show top high short interest stocks of over 20% ratio [www.highshortinterest.com]"
+            "   ark_orders     orders by ARK Investment Management LLC [www.cathiesark.com]"
+        )
+        print("   up_earnings    upcoming earnings release dates [Seeking Alpha]")
+        print(
+            "   high_short     show top high short interest stocks of over 20% ratio [www.highshortinterest.com]"
         )
         print(
-            "   low_float     show low float stocks under 10M shares float [www.lowfloat.com]"
+            "   low_float      show low float stocks under 10M shares float [www.lowfloat.com]"
         )
-        print("   simply_wallst Simply Wall St. research data [Simply Wall St.]")
-        print("   spachero      great website for SPACs research [SpacHero]")
-        print("   uwhales       good website for SPACs research [UnusualWhales]")
+        print("   simply_wallst  Simply Wall St. research data [Simply Wall St.]")
+        print("   spachero       great website for SPACs research [SpacHero]")
+        print("   uwhales        good website for SPACs research [UnusualWhales]")
+        print("   valuation      valuation of sectors, industry, country [Finviz]")
+        print("   performance    performance of sectors, industry, country [Finviz]")
+        print("   spectrum       spectrum of sectors, industry, country [Finviz]")
+        print("   latest         latest news [Seeking Alpha]")
+        print("   trending       trending news [Seeking Alpha]")
+        print("   ratings        top ratings updates [MarketBeat]")
+        print(
+            "   darkpool       promising tickers based on dark pool shares regression [FINRA]"
+        )
+        print("   darkshort      dark pool short position [Stockgrid.io]")
+        print("   shortvol       short interest and days to cover [Stockgrid.io]")
         print("")
 
     def switch(self, an_input: str):
@@ -89,7 +124,30 @@ class DiscoveryController:
             True - quit the program
             None - continue in the menu
         """
+        # Empty command
+        if not an_input:
+            print("")
+            return None
+
         (known_args, other_args) = self.disc_parser.parse_known_args(an_input.split())
+
+        # Due to Finviz implementation of Spectrum, we delete the generated spectrum figure
+        # after saving it and displaying it to the user
+        if self.spectrum_img_to_delete:
+            # Confirm that file exists
+            if os.path.isfile(self.spectrum_img_to_delete + ".jpg"):
+                os.remove(self.spectrum_img_to_delete + ".jpg")
+                self.spectrum_img_to_delete = ""
+
+        # Help menu again
+        if known_args.cmd == "?":
+            self.print_help()
+            return None
+
+        # Clear screen
+        if known_args.cmd == "cls":
+            os.system("cls||clear")
+            return None
 
         return getattr(
             self, "call_" + known_args.cmd, lambda: "Command not recognized!"
@@ -107,12 +165,16 @@ class DiscoveryController:
         """Process Quit command - quit the program"""
         return True
 
+    def call_ipo(self, other_args: List[str]):
+        """Process ipo command"""
+        finnhub_view.ipo_calendar(other_args)
+
     def call_map(self, other_args: List[str]):
         """Process map command"""
         finviz_view.map_sp500_view(other_args)
 
-    def call_sectors(self, other_args: List[str]):
-        """Process sectors command"""
+    def call_rtp_sectors(self, other_args: List[str]):
+        """Process rtp_sectors command"""
         alpha_vantage_view.sectors_view(other_args)
 
     def call_gainers(self, other_args: List[str]):
@@ -155,6 +217,44 @@ class DiscoveryController:
         """Process uwhales command"""
         unusual_whales_view.unusual_whales_view(other_args)
 
+    def call_valuation(self, other_args: List[str]):
+        """Process valuation command"""
+        finviz_view.view_group_data(other_args, "valuation")
+
+    def call_performance(self, other_args: List[str]):
+        """Process performance command"""
+        finviz_view.view_group_data(other_args, "performance")
+
+    def call_spectrum(self, other_args: List[str]):
+        """Process spectrum command"""
+        self.spectrum_img_to_delete = finviz_view.view_group_data(
+            other_args, "spectrum"
+        )
+
+    def call_latest(self, other_args: List[str]):
+        """Process latest command"""
+        seeking_alpha_view.latest_news_view(other_args)
+
+    def call_trending(self, other_args: List[str]):
+        """Process trending command"""
+        seeking_alpha_view.trending_news_view(other_args)
+
+    def call_ratings(self, other_args: List[str]):
+        """Process ratings command"""
+        marketbeat_view.ratings_view(other_args)
+
+    def call_darkpool(self, other_args: List[str]):
+        """Process darkpool command"""
+        finra_ats_view.dark_pool(other_args)
+
+    def call_darkshort(self, other_args: List[str]):
+        """Process darkshort command"""
+        stockgrid_view.darkshort(other_args)
+
+    def call_shortvol(self, other_args: List[str]):
+        """Process shortvol command"""
+        stockgrid_view.shortvol(other_args)
+
 
 def menu():
     """Discovery Menu"""
@@ -178,6 +278,8 @@ def menu():
             an_input = input(f"{get_flair()} (disc)> ")
 
         try:
+            plt.close("all")
+
             process_input = disc_controller.switch(an_input)
 
             if process_input is not None:

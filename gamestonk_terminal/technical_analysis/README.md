@@ -2,10 +2,14 @@
 
 This menu aims to perform a technical analysis on a pre-loaded ticker chart, and the usage of the following commands along with an example will be exploited below.
 
+ * [view](#view)
+    - view historical data and trendlines [Finviz]
  * [summary](#summary)
     - technical summary report [FinBrain API]
  * [recom](#recom)
     - recommendation based on Technical Indicators [Tradingview API]
+  * [pr](#pr)
+    - pattern recognition [Finnhub]
 
 [OVERLAP](#OVERLAP)
   * [ema](#ema)
@@ -41,14 +45,24 @@ This menu aims to perform a technical analysis on a pre-loaded ticker chart, and
   * [obv](#obv)
     - on balance volume
 
-**S/O to https://github.com/twopirllc/pandas-ta** _Owing to this library, it is fairly easy to add other technical indicators. So, let me know if there's any that you would like. Personally I use mostly these ones, hence why I didn't add more._
+**S/O to https://github.com/twopirllc/pandas-ta** _Owing to this library, it is fairly easy to add other technical indicators. So, let us know if there's any other that you would like._
+
+## view  <a name="view"></a>
+```
+usage: view
+```
+
+View historical price with trendlines. [Source: Finviz]
+
+![aapl](https://user-images.githubusercontent.com/25267873/113757843-02107700-970b-11eb-99ab-eb9b1312547f.png)
+
 
 ## summary  <a name="summary"></a>
 ```
 usage: summary
 ```
 
-Technical summary report provided by FinBrain's API. FinBrain Technologies develops deep learning algorithms for financial analysis and prediction, which currently serves traders from more than 150 countries all around the world. [Source: See https://finbrain.tech]
+Technical summary report provided by FinBrain's API. FinBrain Technologies develops deep learning algorithms for financial analysis and prediction, which currently serves traders from more than 150 countries all around the world. [Source: https://finbrain.tech]
 
 <img width="976" alt="Captura de ecrã 2021-03-29, às 00 31 29" src="https://user-images.githubusercontent.com/25267873/112772089-db758080-9026-11eb-93d5-9fd7a4b40380.png">
 
@@ -65,6 +79,19 @@ Print tradingview recommendation based on technical indicators. [Source: https:/
 * -i : interval. Default is showing all of different intervals.
 
 <img width="977" alt="Captura de ecrã 2021-03-31, às 00 14 41" src="https://user-images.githubusercontent.com/25267873/113069531-76ea2b00-91b8-11eb-8934-9f693d3b4ffa.png">
+
+
+## pr  <a name="pr"></a>
+```
+usage: pr [-r {1,5,15,30,60,D,W,M}]
+```
+Display pattern recognition signals on the data. [Source: https://finnhub.io]
+
+* -r : Plot resolution to look for pattern signals. Default 'D'.
+
+![pr](https://user-images.githubusercontent.com/25267873/116812520-06338700-ab47-11eb-8db4-8f5e940507ed.png)
+
+<img width="985" alt="Captura de ecrã 2021-05-02, às 02 27 10" src="https://user-images.githubusercontent.com/25267873/116812505-f6b43e00-ab46-11eb-9776-fa469dc3d3f0.png">
 
 
 # OVERLAP <a name="OVERLAP"></a>

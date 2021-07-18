@@ -12,6 +12,8 @@ This menu aims to help in due-diligence of a pre-loaded stock, and the usage of 
   * rating of the company from strong sell to strong buy [FMP]
 * [pt](#pt)
   * price targets over time [Business Insider]
+* [rot](#rot)
+  * ratings over time [Finnhub]
 * [est](#est)
   * quarter and year analysts earnings estimates [Business Insider]
 * [ins](#ins)
@@ -24,6 +26,18 @@ This menu aims to help in due-diligence of a pre-loaded stock, and the usage of 
   * short interest [Quandl]
 * [warnings](#warnings)
   * company warnings according to Sean Seah book [Market Watch]
+* [dp](#dp)
+  * dark pools (ATS) vs OTC data [FINRA]
+* [ftd](#ftd)
+  * fails-to-deliver data [SEC]
+* [shortview](#shortview)
+  * shows price vs short interest volume [Stockgrid]
+* [darkpos](#darkpos)
+  * net short vs position [Stockgrid]
+* [supplier](#supplier)
+  * list of suppliers [csimarket]
+* [customer](#customer)
+  * list of customers [csimarket]
 
 ## news <a name="news"></a>
 
@@ -84,6 +98,18 @@ Prints price target from analysts. [Source: Business Insider]
 ![pt](https://user-images.githubusercontent.com/25267873/108609888-fec66380-73c8-11eb-8c2f-04ceaac6f3f5.png)
 
 <img width="940" alt="pt2" src="https://user-images.githubusercontent.com/25267873/108609914-3af9c400-73c9-11eb-8820-0abfa9e57119.png">
+
+
+## rot <a name="rot"></a>
+
+```text
+usage: rot
+```
+
+Plots ratings over time. [Source: Finnhub]
+
+![rot](https://user-images.githubusercontent.com/25267873/116864981-ad282980-ac00-11eb-9e86-7163782a8ef6.png)
+
 
 ## est <a name="est"></a>
 
@@ -157,3 +183,83 @@ Sean Seah warnings. Check: Consistent historical earnings per share; Consistentl
 * -d : print insights into warnings calculation. Default False.
 
 <img width="927" alt="warnings" src="https://user-images.githubusercontent.com/25267873/108609497-2ec03780-73c6-11eb-8577-d5da80dae213.png">
+
+## dp <a name="dp"></a>
+
+```text
+usage: dp
+```
+
+Display barchart of dark pool (ATS) and OTC (Non ATS) data
+
+![dp](https://user-images.githubusercontent.com/25267873/115130908-7987b580-9feb-11eb-8bca-1999174178d0.png)
+
+## ftd <a name="ftd"></a>
+
+```text
+usage: ftd [-s START] [-e END] [-n N_NUM] [--raw] [--export {csv,json,xlsx}]
+```
+
+The fails-to-deliver data collected by SEC. Fails to deliver on a given day are a cumulative number of all fails outstanding until that day, plus new fails that occur that day, less fails that settle that day. See <https://www.sec.gov/data/foiadocsfailsdatahtm>. Note that FTD is 1 month delayed. [Source: SEC]
+
+* -n : number of latest fails-to-deliver being printed. Default 0. Overrules start and end FTD datetime. 
+* -s : start of datetime to see FTD. Default 20 days in past.
+* -e : end of datetime to see FTD. Default today.
+* --raw : Print raw data.
+* --export : Export dataframe data to csv,json,xlsx file
+
+![ftd](https://user-images.githubusercontent.com/25267873/125202513-d520b280-e26b-11eb-8091-5b221636a5ce.png)
+
+
+## shortview <a name="shortview"></a>
+
+```text
+usage: shortvol [-n NUM] [-r]
+```
+
+Shows price vs short interest volume. [Source: Stockgrid]
+* -r: Flag to print raw data instead. 
+* -n: Number of last open market days to show. Default: 120, but if -r is set it's 10.
+* --export: Save dataframe as a csv file. Default: false.
+
+![shortview](https://user-images.githubusercontent.com/25267873/122646172-c4ba6380-d115-11eb-8e5c-6ee3ab70095b.png)
+
+<img width="951" alt="shortvolraw_gme" src="https://user-images.githubusercontent.com/25267873/122323990-eeaa3500-cf1f-11eb-91b9-6b9d3a4eee36.png">
+
+
+## darkpos <a name="darkpos"></a>
+
+```text
+usage: darkpos [-n NUM] [-r]
+```
+
+Shows Net Short Vol. vs Position. [Source: Stockgrid]
+* -r: Flag to print raw data instead. 
+* -n: Number of last open market days to show. Default: 120, but if -r is set it's 10.
+* --export: Save dataframe as a csv file. Default: false.
+
+![darkpos](https://user-images.githubusercontent.com/25267873/122646991-f03f4d00-d119-11eb-971f-b554bb4cdec4.png)
+
+<img width="958" alt="darkpos_raw" src="https://user-images.githubusercontent.com/25267873/122646989-ee758980-d119-11eb-9f67-f51f0b75c49d.png">
+
+
+## supplier <a name="supplier"></a>
+
+```text
+usage: supplier
+```
+
+List of suppliers from ticker provided. [Source: CSIMarket]
+
+<img width="974" alt="supplier" src="https://user-images.githubusercontent.com/25267873/124523361-b98e5580-ddee-11eb-94dc-08e4df1b17c0.png">
+
+
+## customer <a name="customer"></a>
+
+```text
+usage: customer
+```
+
+List of customer from ticker provided. [Source: CSIMarket]
+
+<img width="980" alt="customer" src="https://user-images.githubusercontent.com/25267873/124523360-b85d2880-ddee-11eb-8413-836de13d13ce.png">
