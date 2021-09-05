@@ -1,6 +1,7 @@
 """Helper functions"""
 __docformat__ = "numpy"
 import argparse
+from typing import List
 from datetime import datetime, timedelta, time as Time
 import os
 import random
@@ -27,10 +28,31 @@ if cfgPlot.BACKEND is not None:
 
 
 def check_valid_path(path: str) -> str:
+    """Argparse type function to test is path is valid
+
+    Parameters
+    ----------
+    path: str
+        Path supplied
+
+    Returns
+    -------
+    path: str
+        Valid path
+
+    Raises
+    -------
+    argparse.ArgumentTypeError
+        Given path does not exist
+    """
     if not os.path.exists(
         os.path.abspath(
             os.path.join(
-                "gamestonk_terminal", "portfolio_analysis", "portfolios", f"{path}.csv"
+                "gamestonk_terminal",
+                "portfolio",
+                "portfolio_analysis",
+                "portfolios",
+                f"{path}.csv",
             )
         )
     ):
@@ -38,14 +60,41 @@ def check_valid_path(path: str) -> str:
     return path
 
 
-def check_int_range(mini, maxi):
-    """
-    Checks if argparse argument is an int between 2 values.
-    https://stackoverflow.com/questions/55324449/how-to-specify-a-minimum-or-maximum-float-value-with-argparse
+def check_int_range(mini: int, maxi: int):
+    """Checks if argparse argument is an int between 2 values.
+
+    Parameters
+    ----------
+    mini: int
+        Min value to compare
+    maxi: int
+        Max value to compare
+
+    Returns
+    -------
+    int_range_checker:
+        Function that compares the three integers
     """
 
     # Define the function with default arguments
-    def int_range_checker(num) -> int:
+    def int_range_checker(num: int) -> int:
+        """Checks if int is between a high and low value
+
+        Parameters
+        ----------
+        num: int
+            Input integer
+
+        Returns
+        -------
+        num: int
+            Input number if conditions are met
+
+        Raises
+        -------
+        argparse.ArgumentTypeError
+            Input number not between min and max values
+        """
         num = int(num)
         if num < mini or num > maxi:
             raise argparse.ArgumentTypeError(f"must be in range [{mini},{maxi}]")
@@ -63,12 +112,50 @@ def check_non_negative(value) -> int:
     return ivalue
 
 
+def check_positive_list(value) -> List[int]:
+    """Argparse type to return list of positive ints"""
+    list_of_nums = value.split(",")
+    list_of_pos = []
+    for ivalue in list_of_nums:
+        ival = int(ivalue)
+        if ival <= 0:
+            raise argparse.ArgumentTypeError(
+                f"{value} is an invalid positive int value"
+            )
+        list_of_pos.append(ival)
+    return list_of_pos
+
+
 def check_positive(value) -> int:
     """Argparse type to check positive int"""
     ivalue = int(value)
     if ivalue <= 0:
         raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
     return ivalue
+
+
+def check_proportion_range(num) -> float:
+    """Checks if float is between 0 and 1. If so, return it.
+
+    Parameters
+    ----------
+    num: float
+        Input float
+    Returns
+    -------
+    num: float
+        Input number if conditions are met
+    Raises
+    -------
+    argparse.ArgumentTypeError
+        Input number not between min and max values
+    """
+    num = float(num)
+    maxi = 1.0
+    mini = 0.0
+    if num < mini or num > maxi:
+        raise argparse.ArgumentTypeError("Value must be between 0 and 1")
+    return num
 
 
 def valid_date(s: str) -> datetime:
@@ -299,7 +386,7 @@ def divide_chunks(data, n):
 def get_next_stock_market_days(last_stock_day, n_next_days) -> list:
     """gets the next stock market day. Checks against weekends and holidays"""
     n_days = 0
-    l_pred_days = list()
+    l_pred_days = []
     years: list = []
     holidays: list = []
     while n_days < n_next_days:
@@ -437,7 +524,21 @@ def patch_pandas_text_adjustment():
     pandas.io.formats.format.TextAdjustment.adjoin = text_adjustment_adjoin
 
 
-def parse_known_args_and_warn(parser, l_args):
+def parse_known_args_and_warn(parser: argparse.ArgumentParser, other_args: List[str]):
+    """Parses list of arguments into the supplied parser
+
+    Parameters
+    ----------
+    parser: argparse.ArgumentParser
+        Parser with predefined arguments
+    other_args: List[str]
+        List of arguments to parse
+
+    Returns
+    -------
+    ns_parser:
+        Namespace with parsed arguments
+    """
     parser.add_argument(
         "-h", "--help", action="store_true", help="show this help message"
     )
@@ -445,7 +546,7 @@ def parse_known_args_and_warn(parser, l_args):
     if gtff.USE_CLEAR_AFTER_CMD:
         os.system("cls||clear")
 
-    (ns_parser, l_unknown_args) = parser.parse_known_args(l_args)
+    (ns_parser, l_unknown_args) = parser.parse_known_args(other_args)
 
     if ns_parser.help:
         parser.print_help()
@@ -615,7 +716,7 @@ def get_last_time_market_was_open(dt):
 
 
 def find_tickers(submission):
-    ls_text = list()
+    ls_text = []
     ls_text.append(submission.selftext)
     ls_text.append(submission.title)
 
@@ -623,7 +724,7 @@ def find_tickers(submission):
     for comment in submission.comments.list():
         ls_text.append(comment.body)
 
-    l_tickers_found = list()
+    l_tickers_found = []
     for s_text in ls_text:
         for s_ticker in set(re.findall(r"([A-Z]{3,5} )", s_text)):
             l_tickers_found.append(s_ticker.strip())

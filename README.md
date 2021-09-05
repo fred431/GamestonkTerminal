@@ -15,7 +15,7 @@
 [![Bugs Open][bugs-open-shield]][bugs-open-url]
 [![Bugs Closed][bugs-closed-shield]][bugs-closed-url]
 
-[![Build Status](https://github.com/GamestonkTerminal/GamestonkTerminal/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/GamestonkTerminal/GamestonkTerminal/actions)
+[![Build Status](https://github.com/GamestonkTerminal/GamestonkTerminal/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/GamestonkTerminal/GamestonkTerminal/actions)
 [![GitHub release](https://img.shields.io/github/release/GamestonkTerminal/GamestonkTerminal.svg?maxAge=3600)](https://github.com/GamestonkTerminal/GamestonkTerminal/releases)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -34,9 +34,9 @@
   <p align="center">
     The next best thing after Bloomberg Terminal. #weliketheterminal
     <br />
-    <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/blob/main/ROADMAP.md"><strong>≪  ROADMAP</strong></a>
+    <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/blob/master/ROADMAP.md"><strong>≪  ROADMAP</strong></a>
     &nbsp · &nbsp
-    <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/tree/main/gamestonk_terminal/README.md"><strong>FEATURES »</strong></a>
+    <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/tree/master/gamestonk_terminal/README.md"><strong>FEATURES »</strong></a>
     <br />
     <br />
     <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBug%5D">Report Bug</a>
@@ -83,15 +83,6 @@ Gamestonk Terminal provides a modern Python-based integrated environment for inv
 
 As a modern Python-based environment, GamestonkTerminal opens access to numerous Python data libraries in Data Science (Pandas, Numpy, Scipy, Jupyter), Machine Learning (Pytorch, Tensorflow, Sklearn, Flair), and Data Acquisition (Beautiful Soup, and numerous third-party APIs).
 
-## Donation
-
-Gamestonk Terminal is a free Open-Source Software. This means that the entire codebase is public, and any user can use it for free.
-
-A small team of us are consistently working to provide as many updates to the project as we can, and this is done out of hours, often late nights to improve this tool. Whilst we don't earn any money from Gamestonk Terminal, we want to make sure that all our users can make the best investments from our software. As we continue to build on this project, we would really appreciate any type of donation or support so we can buy more coffees to fuel us even more!
-
-Here's our Patreon page: https://www.patreon.com/gamestonkterminal
-
-There are many ways to help support GST. If you want to help, non-monetarily, join our [discord](https://discord.gg/Up2QGbMKHY). Sharing the terminal with friends would also go a long way. Thanks in advance ape.
 
 ## Getting Started
 
@@ -171,7 +162,7 @@ After you've installed Gamestonk Terminal, you'll find a file named "Gamestonk T
 
 **NOTE:** When you close the terminal and re-open it, the only command you need to re-call is `conda activate gst` before you call `python terminal.py` again.
 
-**TROUBLESHOOT:** If you are having troubles to install, check our *newest* <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/blob/main/TROUBLESHOOT.md"><strong>troubleshoot page</strong></a>
+**TROUBLESHOOT:** If you are having troubles to install, check our *newest* <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/blob/master/TROUBLESHOOT.md"><strong>troubleshoot page</strong></a>
 
 ### Advanced User Install - Machine Learning
 
@@ -195,10 +186,21 @@ poetry install -E prediction
 
 *If you would like to set up a docker image:*
 
-* Build the docker: `docker build .`
-* Run it: `docker run -it gamestonkterminal:dev `
+* Build the docker:
 
-Note: The problem with docker is that it won't output matplotlib figures.
+```
+docker-compose -f docker/docker-compose.yaml build gst-python
+docker-compose -f docker/docker-compose.yaml build gst-poetry-deps
+docker-compose -f docker/docker-compose.yaml build gst-poetry
+```
+
+* Run it:
+
+```
+docker run -it --env-file=docker/setenv --rm gst/gst-poetry:1.1.0
+```
+
+Note: Remember to customize your docker/setenv.
 
 ### Update Terminal
 
@@ -239,6 +241,7 @@ These are the ones where a key is necessary:
 * Polygon: https://polygon.io
 * Quandl: https://www.quandl.com/tools/api
 * Reddit: https://www.reddit.com/prefs/apps
+* SentimentInvestor: https://sentimentinvestor.com
 * Tradier: https://developer.tradier.com/getting_started
 * Twitter: https://developer.twitter.com
 
@@ -260,6 +263,7 @@ Alternatively, you can also set them to the following environment variables:
 | [Polygon](https://polygon.io) | GT_API_POLYGON_KEY |
 | [Quandl](https://www.quandl.com) | GT_API_KEY_QUANDL |
 | [Reddit](https://www.reddit.com) | GT_API_REDDIT_CLIENT_ID <br> GT_API_REDDIT_CLIENT_SECRET <br/> GT_API_REDDIT_USERNAME <br/> GT_API_REDDIT_USER_AGENT <br/> GT_API_REDDIT_PASSWORD|
+| [SentimentInvestor](https://sentimentinvestor.com) | GT_API_SENTIMENTINVESTOR_TOKEN <br> GT_API_SENTIMENTINVESTOR_KEY |
 | [Tradier](https://developer.tradier.com) | GT_TRADIER_TOKEN |
 | [Twitter](https://developer.twitter.com) | GT_API_TWITTER_KEY <br/> GT_API_TWITTER_SECRET_KEY <br/> GT_API_TWITTER_BEARER_TOKEN |
 
@@ -278,21 +282,30 @@ Note that it is not necessary to have a valid Alpha Vantage key to get daily OHL
 
 ### Usage
 
-Start by loading a ticker of interest:
+Start by selecting a context that you would like to work with.  If you want to research stocks, you would start with
+```
+stocks
+```
+Alternatively, you can set a default context to be loaded in the config_terminal file by setting
+```
+DEFAULT_CONTEXT = "stocks"
+```
+
+From this menu, you can load a ticker of interest (note the -t is optional):
 ```
 load -t GME
 ```
-The menu will expand to all its menus since a ticker has been loaded.
+At this point, all available menus will be in full color and available to use.
 
-View the historical data of this stock:
+To look at the candle chart of your stock, run:
 ```
-view
+candle
 ```
 Slice the historical data by loading ticker and setting a starting point, e.g.
 ```
 load -t GME -s 2020-06-04
 ```
-Enter in technical analysis menu with
+To perform technical analysis, first enter the menu
 ```
 ta
 ```
@@ -312,6 +325,8 @@ sma -l 10
 Example:
 
 <img src='/images/usage.gif' width="1000">
+
+To return to the stocks menu to perform more research in a different menu, just use the `q` command.  From the stocks menu, using `q` again will return you to the main menu where you can enter a different context (crypto for example).
 
 
 <!-- CONTRIBUTING -->
@@ -385,6 +400,7 @@ Feel free to share loss porn, memes or any questions at:
 * **Chavithra** and **Deel18** : for Degiro's integration.
 * **Traceabl3** : By adding several preset screeners
 * **jpp** : Responsible by developing `Crypto` menu
+* **rkornmeyer** : Provides realtime earnings data on https://thegeekofwallstreet.com/
 
 <a href="https://github.com/GamestonkTerminal/GamestonkTerminal/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=GamestonkTerminal/GamestonkTerminal" height="276"/>
@@ -412,11 +428,11 @@ Feel free to share loss porn, memes or any questions at:
 [stars-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/stargazers
 [issues-shield]: https://img.shields.io/github/issues/GamestonkTerminal/GamestonkTerminal.svg?style=for-the-badge&color=blue
 [issues-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/issues
-[bugs-open-shield]: https://img.shields.io/github/issues/GamestonkTerminal/GamestonkTerminal/type%3Abug.svg?style=for-the-badge&color=yellow
-[bugs-open-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/issues?q=is%3Aissue+label%3Atype%3Abug+is%3Aopen
-[bugs-closed-shield]: https://img.shields.io/github/issues-closed/GamestonkTerminal/GamestonkTerminal/type%3Abug.svg?style=for-the-badge&color=success
-[bugs-closed-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/issues?q=is%3Aissue+label%3Atype%3Abug+is%3Aclosed
+[bugs-open-shield]: https://img.shields.io/github/issues/GamestonkTerminal/GamestonkTerminal/bug.svg?style=for-the-badge&color=yellow
+[bugs-open-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/issues?q=is%3Aissue+label%3Abug+is%3Aopen
+[bugs-closed-shield]: https://img.shields.io/github/issues-closed/GamestonkTerminal/GamestonkTerminal/bug.svg?style=for-the-badge&color=success
+[bugs-closed-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/issues?q=is%3Aissue+label%3Abug+is%3Aclosed
 [license-shield]: https://img.shields.io/github/license/GamestonkTerminal/GamestonkTerminal.svg?style=for-the-badge
-[license-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/blob/master/LICENSE.txt
+[license-url]: https://github.com/GamestonkTerminal/GamestonkTerminal/blob/main/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/DidierRLopes

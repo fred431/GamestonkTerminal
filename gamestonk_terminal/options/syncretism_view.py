@@ -1,186 +1,176 @@
 """Helper functions for scraping options data"""
 __docformat__ = "numpy"
 
-import argparse
-import os
-from typing import List
 import configparser
-import requests
-import pandas as pd
+import os
+
+import matplotlib.pyplot as plt
 from tabulate import tabulate
-from gamestonk_terminal.helper_funcs import parse_known_args_and_warn
 
-presets_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "presets/")
-
-
-def view_available_presets(other_args: List[str]):
-    """View available presets."""
-    parser = argparse.ArgumentParser(
-        add_help=False,
-        prog="view",
-        description="""View available presets under presets folder.""",
-    )
-    parser.add_argument(
-        "-p",
-        "--preset",
-        action="store",
-        dest="preset",
-        type=str,
-        help="View specific preset",
-        default="",
-        choices=[
-            preset.split(".")[0]
-            for preset in os.listdir(presets_path)
-            if preset[-4:] == ".ini"
-        ],
-    )
-
-    try:
-        if other_args:
-            if "-" not in other_args[0]:
-                other_args.insert(0, "-p")
-        ns_parser = parse_known_args_and_warn(parser, other_args)
-        if not ns_parser:
-            return
-
-        if ns_parser.preset:
-            preset_filter = configparser.RawConfigParser()
-            preset_filter.optionxform = str  # type: ignore
-            preset_filter.read(presets_path + ns_parser.preset + ".ini")
-
-            filters_headers = ["FILTER"]
-
-            print("")
-            for filter_header in filters_headers:
-                print(f" - {filter_header} -")
-                d_filters = {**preset_filter[filter_header]}
-                d_filters = {k: v for k, v in d_filters.items() if v}
-                if d_filters:
-                    max_len = len(max(d_filters, key=len))
-                    for key, value in d_filters.items():
-                        print(f"{key}{(max_len-len(key))*' '}: {value}")
-                print("")
-
-        else:
-            presets = [
-                preset.split(".")[0]
-                for preset in os.listdir(presets_path)
-                if preset[-4:] == ".ini"
-            ]
-
-            for preset in presets:
-                with open(
-                    presets_path + preset + ".ini",
-                    encoding="utf8",
-                ) as f:
-                    description = ""
-                    for line in f:
-                        if line.strip() == "[FILTER]":
-                            break
-                        description += line.strip()
-                print(f"\nPRESET: {preset}")
-                print(description.split("Description: ")[1].replace("#", ""))
-            print("")
-    except Exception as e:
-        print(e)
+from gamestonk_terminal import config_plot as cfp
+from gamestonk_terminal import feature_flags as gtff
+from gamestonk_terminal.helper_funcs import export_data, plot_autoscale
+from gamestonk_terminal.options import syncretism_model
 
 
-def screener_output(other_args: List[str]):
-    """screener filter output"""
-    parser = argparse.ArgumentParser(
-        add_help=False,
-        prog="scr",
-        description="""Sreener filter output from https://ops.syncretism.io/index.html.
-Where: CS: Contract Symbol; S: Symbol, T: Option Type; Str: Strike; Exp v: Expiration;
-IV: Implied Volatility; LP: Last Price; B: Bid; A: Ask; V: Volume; OI: Open Interest;
-Y: Yield; MY: Monthly Yield; SMP: Regular Market Price; SMDL: Regular Market Day Low;
-SMDH: Regular Market Day High; LU: Last Trade Date; LC: Last Crawl; ITM: In The Money;
-PC: Price Change; PB: Price-to-book. """,
-    )
-    parser.add_argument(
-        "-p",
-        "--preset",
-        action="store",
-        dest="preset",
-        type=str,
-        default="template",
-        help="Filter presets",
-        choices=[
-            preset.split(".")[0]
-            for preset in os.listdir(presets_path)
-            if preset[-4:] == ".ini"
-        ],
-    )
+def view_available_presets(preset: str, presets_path: str):
+    """View available presets.
 
-    try:
-        if other_args:
-            if "-" not in other_args[0]:
-                other_args.insert(0, "-p")
-
-        ns_parser = parse_known_args_and_warn(parser, other_args)
-        if not ns_parser:
-            return
-
-        d_cols = {
-            "contractsymbol": "CS",
-            "symbol": "S",
-            "opttype": "T",
-            "strike": "Str",
-            "expiration": "Exp ∨",
-            "impliedvolatility": "IV",
-            "lastprice": "LP",
-            "bid": "B",
-            "ask": "A",
-            "volume": "V",
-            "openinterest": "OI",
-            "yield": "Y",
-            "monthlyyield": "MY",
-            "regularmarketprice": "SMP",
-            "regularmarketdaylow": "SMDL",
-            "regularmarketdayhigh": "SMDH",
-            "lasttradedate": "LU",
-            "lastcrawl": "LC",
-            "inthemoney": "ITM",
-            "pchange": "PC",
-            "pricetobook": "PB",
-        }
-
+    Parameters
+    ----------
+    preset: str
+       Preset to look at
+    presets_path: str
+        Path to presets folder
+    """
+    if preset:
         preset_filter = configparser.RawConfigParser()
         preset_filter.optionxform = str  # type: ignore
-        preset_filter.read(presets_path + ns_parser.preset + ".ini")
-
-        d_filters = {k: v for k, v in dict(preset_filter["FILTER"]).items() if v}
-        s_filters = str(d_filters)
-        s_filters = s_filters.replace(": '", ": ").replace("',", ",").replace("'}", "}")
-        s_filters = s_filters.replace("'", '"')
-
-        link = "https://api.syncretism.io/ops"
-
-        res = requests.get(
-            link, headers={"Content-type": "application/json"}, data=s_filters
-        )
-
-        if res.status_code == 200:
-            df_res = pd.DataFrame(res.json())
-
-            if df_res.empty:
-                print(f"No options data found for preset: {ns_parser.preset}", "\n")
-                return
-
-            df_res = df_res.rename(columns=d_cols)[list(d_cols.values())[:17]]
-
-            print(
-                tabulate(
-                    df_res,
-                    headers=df_res.columns,
-                    showindex=False,
-                    tablefmt="fancy_grid",
-                )
-            )
-        else:
-            print("Wrong arguments specified. Error " + str(res.status_code))
-
+        preset_filter.read(os.path.join(presets_path, preset + ".ini"))
+        filters_headers = ["FILTER"]
         print("")
 
-    except Exception as e:
-        print(e, "\n")
+        for filter_header in filters_headers:
+            print(f" - {filter_header} -")
+            d_filters = {**preset_filter[filter_header]}
+            d_filters = {k: v for k, v in d_filters.items() if v}
+            if d_filters:
+                max_len = len(max(d_filters, key=len))
+                for key, value in d_filters.items():
+                    print(f"{key}{(max_len-len(key))*' '}: {value}")
+            print("")
+
+    else:
+        presets = [
+            preset.split(".")[0]
+            for preset in os.listdir(presets_path)
+            if preset[-4:] == ".ini"
+        ]
+
+        for preset_i in presets:
+            with open(
+                os.path.join(presets_path, preset + ".ini"),
+                encoding="utf8",
+            ) as f:
+                description = ""
+                for line in f:
+                    if line.strip() == "[FILTER]":
+                        break
+                    description += line.strip()
+            print(f"\nPRESET: {preset_i}")
+            print(description.split("Description: ")[1].replace("#", ""))
+        print("")
+
+
+def view_screener_output(preset: str, presets_path: str, n_show: int, export: str):
+    """Print the output of screener
+
+    Parameters
+    ----------
+    preset: str
+        Preset file to screen for
+    presets_path: str
+        Path to preset folder
+    n_show: int
+        Number of randomly sorted rows to display
+    export: str
+        Format for export file
+    """
+    df_res, error_msg = syncretism_model.get_screener_output(preset, presets_path)
+    if error_msg:
+        print(error_msg, "\n")
+        return
+
+    export_data(
+        export,
+        os.path.dirname(os.path.abspath(__file__)),
+        "scr",
+        df_res,
+    )
+
+    if n_show > 0:
+        df_res = df_res.sample(n_show)
+
+    print(
+        tabulate(
+            df_res,
+            headers=df_res.columns,
+            showindex=False,
+            tablefmt="fancy_grid",
+        ),
+        "\n",
+    )
+
+
+# pylint:disable=too-many-arguments
+
+
+def view_historical_greeks(
+    ticker: str,
+    expiry: str,
+    strike: float,
+    greek: str,
+    chain_id: str,
+    put: bool,
+    raw: bool,
+    n_show: int,
+    export: str,
+):
+    """Plots historical greeks for a given option
+
+    Parameters
+    ----------
+    ticker: str
+        Stock ticker
+    expiry: str
+        Expiration date
+    strike: float
+        Strike price to consider
+    greek: str
+        Greek variable to plot
+    chain_id: str
+        OCC option chain.  Overwrites other variables
+    put: bool
+        Is this a put option?
+    raw: bool
+        Print to console
+    n_show: int
+        Number of rows to show in raw
+    export: str
+        Format to export data
+    """
+    df = syncretism_model.get_historical_greeks(ticker, expiry, chain_id, strike, put)
+
+    if raw:
+        print(tabulate(df.tail(n_show), headers=df.columns, tablefmt="fancy_grid"))
+
+    if export:
+        export_data(
+            export,
+            os.path.dirname(os.path.abspath(__file__)),
+            "grhist",
+            df,
+        )
+
+    fig, ax = plt.subplots(figsize=plot_autoscale(), dpi=cfp.PLOT_DPI)
+    im1 = ax.plot(df.index, df[greek], c="firebrick", label=greek)
+    ax.set_ylabel(greek)
+    ax1 = ax.twinx()
+    im2 = ax1.plot(df.index, df.price, c="dodgerblue", label="Stock Price")
+    ax1.set_ylabel(f"{ticker} Price")
+    ax1.set_xlabel("Date")
+    ax.grid("on")
+    ax.set_title(
+        f"{greek} historical for {ticker.upper()} {strike} {['Call','Put'][put]}"
+    )
+    plt.gcf().autofmt_xdate()
+
+    if gtff.USE_ION:
+        plt.ion()
+
+    ims = im1 + im2
+    labels = [lab.get_label() for lab in ims]
+    plt.legend(ims, labels, loc=0)
+    fig.tight_layout(pad=1)
+    plt.show()
+    print("")
