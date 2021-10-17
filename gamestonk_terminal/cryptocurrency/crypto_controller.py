@@ -17,6 +17,7 @@ from gamestonk_terminal.helper_funcs import (
 from gamestonk_terminal.menu import session
 from gamestonk_terminal.cryptocurrency.technical_analysis import ta_controller
 from gamestonk_terminal.cryptocurrency.overview import overview_controller
+from gamestonk_terminal.cryptocurrency.defi import defi_controller
 from gamestonk_terminal.cryptocurrency.due_diligence import (
     dd_controller,
     coinpaprika_view,
@@ -38,10 +39,9 @@ from gamestonk_terminal.cryptocurrency.cryptocurrency_helpers import (
     plot_chart,
 )
 from gamestonk_terminal.cryptocurrency.report import report_controller
+from gamestonk_terminal.cryptocurrency.due_diligence import binance_model
+from gamestonk_terminal.cryptocurrency.due_diligence import coinbase_model
 from gamestonk_terminal.cryptocurrency.onchain import onchain_controller
-from gamestonk_terminal.cryptocurrency.due_diligence.binance_model import (
-    show_available_pairs_for_given_symbol,
-)
 import gamestonk_terminal.config_terminal as cfg
 
 
@@ -61,12 +61,13 @@ class CryptoController:
         "find",
     ]
 
-    CHOICES_MENUS = ["ta", "dd", "ov", "disc", "report", "onchain"]
+    CHOICES_MENUS = ["ta", "dd", "ov", "disc", "report", "onchain", "defi"]
 
     SOURCES = {
         "bin": "Binance",
         "cg": "CoinGecko",
         "cp": "CoinPaprika",
+        "cb": "Coinbase",
     }
 
     DD_VIEWS_MAPPING = {
@@ -91,8 +92,7 @@ class CryptoController:
 
     def print_help(self):
         """Print help"""
-        help_text = """https://github.com/GamestonkTerminal/GamestonkTerminal/tree/main/gamestonk_terminal/cryptocurrency
-
+        help_text = """
 >> CRYPTO <<
 
 What do you want to do?
@@ -122,6 +122,7 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
 >   dd          due-diligence for loaded coin,          e.g.: coin information, social media, market stats
 >   ta          technical analysis for loaded coin,     e.g.: ema, macd, rsi, adx, bbands, obv
 >   onchain     information on different blockchains,   e.g.: eth gas fees
+>   defi        decentralized finance information,      e.g.: dpi, llama, tvl, lending, borrow, funding
 >   report      generate automatic report
 """
         print(help_text)
@@ -178,7 +179,7 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                 prog="load",
                 description="Load crypto currency to perform analysis on. "
-                "Available data sources are CoinGecko, CoinPaprika, and Binance"
+                "Available data sources are CoinGecko, CoinPaprika, Binance, Coinbase"
                 "By default main source used for analysis is CoinGecko (cg). To change it use --source flag",
             )
 
@@ -196,7 +197,7 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                 "--source",
                 help="Source of data",
                 dest="source",
-                choices=("cp", "cg", "bin"),
+                choices=("cp", "cg", "bin", "cb"),
                 default="cg",
                 required=False,
             )
@@ -236,11 +237,8 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                 add_help=False,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                 prog="chart",
-                description="""Loads data for technical analysis. You can specify currency vs which you want
-                to show chart and also number of days to get data for.
-                By default currency: usd and days: 30.
-                E.g. if you loaded in previous step Ethereum and you want to see it's price vs btc
-                in last 90 days range use `ta --vs btc --days 90`""",
+                description="""Display chart for loaded coin. You can specify currency vs which you want
+                to show chart and also number of days to get data for.""",
             )
 
             if self.source == "cp":
@@ -295,7 +293,9 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                     "1month": client.KLINE_INTERVAL_1MONTH,
                 }
 
-                _, quotes = show_available_pairs_for_given_symbol(self.current_coin)
+                _, quotes = binance_model.show_available_pairs_for_given_symbol(
+                    self.current_coin
+                )
 
                 parser.add_argument(
                     "--vs",
@@ -325,13 +325,61 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                     type=check_positive,
                 )
 
+            if self.source == "cb":
+                interval_map = {
+                    "1min": 60,
+                    "5min": 300,
+                    "15min": 900,
+                    "1hour": 3600,
+                    "6hour": 21600,
+                    "24hour": 86400,
+                    "1day": 86400,
+                }
+
+                _, quotes = coinbase_model.show_available_pairs_for_given_symbol(
+                    self.current_coin
+                )
+                if len(quotes) < 0:
+                    print(
+                        f"Couldn't find any quoted coins for provided symbol {self.current_coin}"
+                    )
+                    return
+
+                parser.add_argument(
+                    "--vs",
+                    help="Quote currency (what to view coin vs)",
+                    dest="vs",
+                    type=str,
+                    default="USDT" if "USDT" in quotes else quotes[0],
+                    choices=quotes,
+                )
+
+                parser.add_argument(
+                    "-i",
+                    "--interval",
+                    help="Interval to get data",
+                    choices=list(interval_map.keys()),
+                    dest="interval",
+                    default="1day",
+                    type=str,
+                )
+
+                parser.add_argument(
+                    "-l",
+                    "--limit",
+                    dest="limit",
+                    default=100,
+                    help="Number to get",
+                    type=check_positive,
+                )
+
             try:
                 ns_parser = parse_known_args_and_warn(parser, other_args)
 
                 if not ns_parser:
                     return
 
-                if self.source == "bin":
+                if self.source in ["bin", "cb"]:
                     limit = ns_parser.limit
                     interval = ns_parser.interval
                     days = 0
@@ -424,7 +472,9 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                     "1month": client.KLINE_INTERVAL_1MONTH,
                 }
 
-                _, quotes = show_available_pairs_for_given_symbol(self.current_coin)
+                _, quotes = binance_model.show_available_pairs_for_given_symbol(
+                    self.current_coin
+                )
                 parser.add_argument(
                     "--vs",
                     help="Quote currency (what to view coin vs)",
@@ -453,13 +503,109 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                     type=check_positive,
                 )
 
+                if self.source == "cb":
+                    interval_map = {
+                        "1min": 60,
+                        "5min": 300,
+                        "15min": 900,
+                        "1hour": 3600,
+                        "6hour": 21600,
+                        "24hour": 86400,
+                        "1day": 86400,
+                    }
+
+                    _, quotes = coinbase_model.show_available_pairs_for_given_symbol(
+                        self.current_coin
+                    )
+                    if len(quotes) < 0:
+                        print(
+                            f"Couldn't find any quoted coins for provided symbol {self.current_coin}"
+                        )
+                        return
+
+                    parser.add_argument(
+                        "--vs",
+                        help="Quote currency (what to view coin vs)",
+                        dest="vs",
+                        type=str,
+                        default="USDT" if "USDT" in quotes else quotes[0],
+                        choices=quotes,
+                    )
+
+                    parser.add_argument(
+                        "-i",
+                        "--interval",
+                        help="Interval to get data",
+                        choices=list(interval_map.keys()),
+                        dest="interval",
+                        default="1day",
+                        type=str,
+                    )
+
+                    parser.add_argument(
+                        "-l",
+                        "--limit",
+                        dest="limit",
+                        default=100,
+                        help="Number to get",
+                        type=check_positive,
+                    )
+
+            if self.source == "cb":
+                interval_map = {
+                    "1min": 60,
+                    "5min": 300,
+                    "15min": 900,
+                    "1hour": 3600,
+                    "6hour": 21600,
+                    "24hour": 86400,
+                    "1day": 86400,
+                }
+
+                _, quotes = coinbase_model.show_available_pairs_for_given_symbol(
+                    self.current_coin
+                )
+                if len(quotes) < 0:
+                    print(
+                        f"Couldn't find any quoted coins for provided symbol {self.current_coin}"
+                    )
+                    return
+
+                parser.add_argument(
+                    "--vs",
+                    help="Quote currency (what to view coin vs)",
+                    dest="vs",
+                    type=str,
+                    default="USDT" if "USDT" in quotes else quotes[0],
+                    choices=quotes,
+                )
+
+                parser.add_argument(
+                    "-i",
+                    "--interval",
+                    help="Interval to get data",
+                    choices=list(interval_map.keys()),
+                    dest="interval",
+                    default="1day",
+                    type=str,
+                )
+
+                parser.add_argument(
+                    "-l",
+                    "--limit",
+                    dest="limit",
+                    default=100,
+                    help="Number to get",
+                    type=check_positive,
+                )
+
             try:
                 ns_parser = parse_known_args_and_warn(parser, other_args)
 
                 if not ns_parser:
                     return
 
-                if self.source == "bin":
+                if self.source in ["bin", "cb"]:
                     limit = ns_parser.limit
                     interval = ns_parser.interval
                     days = 0
@@ -492,6 +638,7 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
                     if quit is not None:
                         if quit is True:
                             return quit
+                        self.print_help()
 
                 except (ValueError, KeyError) as e:
                     print(e)
@@ -515,6 +662,14 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
         """Process ov command"""
         ov = overview_controller.menu()
         if ov is False:
+            self.print_help()
+        else:
+            return True
+
+    def call_defi(self, _):
+        """Process defi command"""
+        defi = defi_controller.menu()
+        if defi is False:
             self.print_help()
         else:
             return True
@@ -599,7 +754,7 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             description="""
             Find similar coin by coin name,symbol or id. If you don't remember exact name or id of the Coin at CoinGecko,
-            Binance or CoinPaprika you can use this command to display coins with similar name, symbol or id
+            Binance, Coinbase or CoinPaprika you can use this command to display coins with similar name, symbol or id
             to your search query.
             Example of usage: coin name is something like "polka". So I can try: find -c polka -k name -t 25
             It will search for coin that has similar name to polka and display top 25 matches.
@@ -639,7 +794,7 @@ Note: Some of CoinGecko commands can fail. Team is working on fix.
         parser.add_argument(
             "--source",
             dest="source",
-            choices=["cp", "cg", "bin"],
+            choices=["cp", "cg", "bin", "cb"],
             default="cg",
             help="Source of data.",
             type=str,
